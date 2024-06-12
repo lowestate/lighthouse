@@ -31,3 +31,6 @@ island_rect.center = (screen_width // 2, screen_height // 2)
 
 
 beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)    
+
+
+font = pygame.font.Font('font/ToThePointRegular-n9y4.ttf', 36)

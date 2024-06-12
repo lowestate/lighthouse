@@ -3,7 +3,6 @@ import pygame
 from consts import *
 from start import *
 
-# Вспомогательная функция для получения координат треугольника луча
 def get_points():
     perpendicular_dx = -dy
     perpendicular_dy = dx
@@ -42,7 +41,6 @@ def get_points():
 
     return left_vertex_x, left_vertex_y, right_vertex_x, right_vertex_y
 
-# Функция проверки, находится ли точка внутри треугольника
 def point_inside_triangle(x, y, triangle):
     x1, y1 = triangle[0]
     x2, y2 = triangle[1]
@@ -82,40 +80,35 @@ def draw_squares(squares):
         distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
 
         if distance_to_center < 250:
-            # Перманентно окрашиваем квадрат в красный
-            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, 40, 40))
+            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
             continue
 
-        if square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + 40, square_y), (square_x, square_y + 40), (square_x + 40, square_y + 40)]):
+        if square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
             square['state'] = 'hit'
             square['start_time'] = current_time
 
         if square['state'] == 'hit':
-            elapsed_time = (current_time - square['start_time']) / 1000  # время в секундах
+            elapsed_time = (current_time - square['start_time']) / 1000
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time)))
                 square_color = (255, 0, 0, alpha)
-                s = pygame.Surface((40, 40), pygame.SRCALPHA)
+                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
                 s.fill(square_color)
                 screen.blit(s, (square_x, square_y))
             else:
                 square['state'] = 'normal'
         elif square['state'] == 'normal':
-            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, 40, 40))  # Отрисовка квадрата
+            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
-# Создание списка для хранения координат кругов
 circles = []
 
-# Создание списка для хранения состояния квадратов
 squares = []
 square_states = {}
 
-# Добавление координат произвольных квадратов
 square_positions = [(1000, 50), (400, 170), (150, 900), (1450, 200), (1700, 900)]
 for pos in square_positions:
     squares.append({'position': pos, 'state': 'normal', 'start_time': 0})
 
-# Главный цикл игры
 running = True
 clock = pygame.time.Clock()
 
@@ -123,77 +116,63 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:  # Обработка нажатия левой кнопки мыши
-            # Получение позиции курсора
+        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             mouse_x, mouse_y = pygame.mouse.get_pos()
-            # Вычисление вектора от центра экрана к позиции курсора
             dx = mouse_x - (screen_width // 2)
             dy = mouse_y - (screen_height // 2)
-            # Нормализация вектора
+           
             length = math.sqrt(dx ** 2 + dy ** 2)
             if length > 0:
                 dx /= length
                 dy /= length
-            # Добавление круга в список с начальной позицией в центре экрана и скоростью, направленной курсору
+           
             
             circle_x = screen_width // 2
             circle_y = screen_height // 2
-            speed = 10  # Скорость движения круга
+            speed = 10
             circles.append((circle_x, circle_y, dx * speed, dy * speed))
 
-    # Получение позиции курсора
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
-    # Вычисление вектора от центра экрана к курсору
     dx = mouse_x - (screen_width // 2)
     dy = mouse_y - (screen_height // 2)
     
-    # Нормализация вектора
     length = math.sqrt(dx ** 2 + dy ** 2)
     if length > 0:
         dx /= length
         dy /= length
 
-    # Вычисление конечной точки луча
     end_x = (screen_width // 2) + dx * beam_length
     end_y = (screen_height // 2) + dy * beam_length
 
-    # Очистка луча
     beam_surface.fill((0, 0, 0, 0))
-
-    # Создание списка координат для треугольника луча
-    # Находим вектор, перпендикулярный лучу в его конце
     
     left_x, left_y, right_x, right_y = get_points()
 
-    # Создаем список координат для треугольника луча
     beam_triangle = [
         (left_x, left_y),    # вершина слева
         (right_x, right_y),  # вершина справа
         (screen_width // 2, screen_height // 2)  # вершина в центре
     ]
 
-    # Рисование треугольника на поверхности луча
     pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
 
-    # Рисование луча
     pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)  
 
-    # Обновление позиции квадратов
     for square in squares:
         square_x, square_y = square['position']
-        # Вычисляем вектор направления к центру экрана
+
         direction_x = (screen_width // 2) - square_x
         direction_y = (screen_height // 2) - square_y
         distance = math.sqrt(direction_x ** 2 + direction_y ** 2)
-        # Нормализуем вектор направления
+
         if distance > 0:
             direction_x /= distance
             direction_y /= distance
-        # Обновляем координаты квадрата, смещая его к центру экрана
+
         square_x += direction_x * enemy_speed
         square_y += direction_y * enemy_speed
-        # Обновляем координаты квадрата в списке
+
         square['position'] = (square_x, square_y)
 
     screen.fill(blue_color)
@@ -203,21 +182,17 @@ while running:
 
     current_time = pygame.time.get_ticks()
 
-    # Отрисовка квадратов
     draw_squares(squares)
 
-    # Проверка столкновений кругов с квадратами
     for circle in circles:
         circle_x, circle_y, dx, dy = circle
         for square in squares:
             square_x, square_y = square['position']
             if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):
                 squares.remove(square)
-    
-    
+        
     circles = draw_circles(circles)
 
-    # Обновление экрана
     pygame.display.flip()
     clock.tick(60)
 

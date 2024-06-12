@@ -1,4 +1,3 @@
-
 # фон
 blue_color = (1, 8, 13)
 
@@ -20,3 +19,5 @@ circle_color = (255, 0, 0)  # Красный цвет
 
 # враг
 enemy_speed = 0.5
+
+square_size = 40
