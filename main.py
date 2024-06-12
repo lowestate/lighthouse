@@ -58,6 +58,51 @@ def point_inside_triangle(x, y, triangle):
     # то точка находится внутри треугольника
     return main_triangle_area == triangle1_area + triangle2_area + triangle3_area
 
+def draw_circles(circles):
+    new_circles = []
+    for circle in circles:
+        # Извлечение координат и скорости круга
+        circle_x, circle_y, dx, dy = circle
+        # Обновление позиции круга
+        circle_x += dx
+        circle_y += dy
+        # Проверка, выходит ли круг за границы экрана
+        if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
+            continue  # Пропускаем этот круг
+        # Отрисовка круга
+        pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
+        # Добавляем круг в новый список
+        new_circles.append((circle_x, circle_y, dx, dy))
+    # Заменяем старый список новым
+    return new_circles
+
+def draw_squares(squares):
+    for square in squares:
+        square_x, square_y = square['position']
+        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
+
+        if distance_to_center < 250:
+            # Перманентно окрашиваем квадрат в красный
+            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, 40, 40))
+            continue
+
+        if square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + 40, square_y), (square_x, square_y + 40), (square_x + 40, square_y + 40)]):
+            square['state'] = 'hit'
+            square['start_time'] = current_time
+
+        if square['state'] == 'hit':
+            elapsed_time = (current_time - square['start_time']) / 1000  # время в секундах
+            if elapsed_time < 1:
+                alpha = max(0, int(255 * (1 - elapsed_time)))
+                square_color = (255, 0, 0, alpha)
+                s = pygame.Surface((40, 40), pygame.SRCALPHA)
+                s.fill(square_color)
+                screen.blit(s, (square_x, square_y))
+            else:
+                square['state'] = 'normal'
+        elif square['state'] == 'normal':
+            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, 40, 40))  # Отрисовка квадрата
+
 # Создание списка для хранения координат кругов
 circles = []
 
@@ -159,41 +204,18 @@ while running:
     current_time = pygame.time.get_ticks()
 
     # Отрисовка квадратов
-    for square in squares:
-        square_x, square_y = square['position']
-        if square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + 40, square_y), (square_x, square_y + 40), (square_x + 40, square_y + 40)]):
-            square['state'] = 'hit'
-            square['start_time'] = current_time
+    draw_squares(squares)
 
-        if square['state'] == 'hit':
-            elapsed_time = (current_time - square['start_time']) / 1000  # время в секундах
-            if elapsed_time < 1:
-                alpha = max(0, int(255 * (1 - elapsed_time)))
-                square_color = (255, 0, 0, alpha)
-                s = pygame.Surface((40, 40), pygame.SRCALPHA)
-                s.fill(square_color)
-                screen.blit(s, (square_x, square_y))
-            else:
-                square['state'] = 'normal'
-        elif square['state'] == 'normal':
-            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, 40, 40))  # Отрисовка квадрата
-    
-    new_circles = []
+    # Проверка столкновений кругов с квадратами
     for circle in circles:
-        # Извлечение координат и скорости круга
         circle_x, circle_y, dx, dy = circle
-        # Обновление позиции круга
-        circle_x += dx
-        circle_y += dy
-        # Проверка, выходит ли круг за границы экрана
-        if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
-            continue  # Пропускаем этот круг
-        # Отрисовка круга
-        pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
-        # Добавляем круг в новый список
-        new_circles.append((circle_x, circle_y, dx, dy))
-    # Заменяем старый список новым
-    circles = new_circles
+        for square in squares:
+            square_x, square_y = square['position']
+            if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):
+                squares.remove(square)
+    
+    
+    circles = draw_circles(circles)
 
     # Обновление экрана
     pygame.display.flip()
