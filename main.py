@@ -100,14 +100,56 @@ def draw_squares(squares):
         elif square['state'] == 'normal':
             pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
-circles = []
+def check_collision(circles, squares):
+    for circle in circles:
+        circle_x, circle_y, dx, dy = circle
+        for square in squares:
+            square_x, square_y = square['position']
+            if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):        
+                death_anim(square=square)
+                squares.remove(square)
 
+def death_anim(square):
+    square['fade'] = pygame.time.get_ticks()
+    fading_squares.append(square)
+
+def update_fading_squares():
+    current_time = pygame.time.get_ticks()
+    for square in fading_squares:
+        elapsed_time = (current_time - square['fade']) / 1000
+        if elapsed_time < 1:
+            alpha = max(0, int(255 * (1 - elapsed_time / 1)))
+            square_color = (240, 240, 240, alpha)
+            sq_x, sq_y = square['position']
+            s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+            s.fill(square_color)
+            screen.blit(s, (sq_x, sq_y))
+        else:
+            fading_squares.remove(square)    
+
+def shoot():
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    dx = mouse_x - (screen_width // 2)
+    dy = mouse_y - (screen_height // 2)
+           
+    length = math.sqrt(dx ** 2 + dy ** 2)
+    if length > 0:
+        dx /= length
+        dy /= length
+           
+            
+    circle_x = screen_width // 2
+    circle_y = screen_height // 2
+    speed = 10
+    circles.append((circle_x, circle_y, dx * speed, dy * speed))
+
+circles = []
 squares = []
-square_states = {}
+fading_squares = []
 
 square_positions = [(1000, 50), (400, 170), (150, 900), (1450, 200), (1700, 900)]
 for pos in square_positions:
-    squares.append({'position': pos, 'state': 'normal', 'start_time': 0})
+    squares.append({'position': pos, 'state': 'normal', 'start_time': 0, 'fade': 0})
 
 running = True
 clock = pygame.time.Clock()
@@ -117,20 +159,7 @@ while running:
         if event.type == pygame.KEYDOWN:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            mouse_x, mouse_y = pygame.mouse.get_pos()
-            dx = mouse_x - (screen_width // 2)
-            dy = mouse_y - (screen_height // 2)
-           
-            length = math.sqrt(dx ** 2 + dy ** 2)
-            if length > 0:
-                dx /= length
-                dy /= length
-           
-            
-            circle_x = screen_width // 2
-            circle_y = screen_height // 2
-            speed = 10
-            circles.append((circle_x, circle_y, dx * speed, dy * speed))
+            shoot()
 
     mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -183,13 +212,9 @@ while running:
     current_time = pygame.time.get_ticks()
 
     draw_squares(squares)
+    update_fading_squares()
 
-    for circle in circles:
-        circle_x, circle_y, dx, dy = circle
-        for square in squares:
-            square_x, square_y = square['position']
-            if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):
-                squares.remove(square)
+    check_collision(circles=circles, squares=squares)
         
     circles = draw_circles(circles)
 
