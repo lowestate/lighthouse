@@ -3,6 +3,11 @@ import pygame
 from consts import *
 from start import *
 
+circles = []
+squares = []
+fading_squares = []
+points=0
+
 def get_points():
     perpendicular_dx = -dy
     perpendicular_dy = dx
@@ -143,9 +148,11 @@ def shoot():
     speed = 10
     circles.append((circle_x, circle_y, dx * speed, dy * speed))
 
-circles = []
-squares = []
-fading_squares = []
+def render_points(points):
+    print(points)
+    points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
+    text_rect = points_text.get_rect(center=(screen_width // 2, 30))
+    screen.blit(points_text, text_rect)
 
 square_positions = [(1000, 50), (400, 170), (150, 900), (1450, 200), (1700, 900)]
 for pos in square_positions:
@@ -214,9 +221,17 @@ while running:
     draw_squares(squares)
     update_fading_squares()
 
+    n_sq = len(squares)
+
     check_collision(circles=circles, squares=squares)
+
+    # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
+    if len(squares) < n_sq:
+        points+=1
         
     circles = draw_circles(circles)
+
+    render_points(points=points)
 
     pygame.display.flip()
     clock.tick(60)
