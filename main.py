@@ -160,24 +160,23 @@ def render_points(points):
     text_rect = points_text.get_rect(center=(screen_width // 2, 30))
     screen.blit(points_text, text_rect)
 
-def victory():
+def endscreen(result):
     victory_screen = pygame.Surface((screen_width, screen_height))
     victory_screen.fill((0, 0, 0))
 
     font = pygame.font.Font(None, 144)
     button_font = pygame.font.Font(None, 72)
 
-    # Надпись "YOU WIN"
-    text = font.render("YOU WIN", True, (255, 255, 255))
+    text = font.render(result, True, (255, 255, 255))
     text_rect = text.get_rect(center=(screen_width // 2, screen_height // 3))
 
     # Кнопка "Заново"
-    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 50)
+    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
     replay_text = button_font.render("Заново", True, (0, 0, 0))
     replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
     # Кнопка "Выйти"
-    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 100, 300, 50)
+    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 200, 300, 100)
     quit_text = button_font.render("Выйти", True, (0, 0, 0))
     quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
@@ -204,7 +203,19 @@ def victory():
 
         screen.blit(victory_screen, (0, 0))
         pygame.display.flip()
-    
+
+def check_loss(island_circle, squares):
+    island_center, island_radius = island_circle
+    for square in squares:
+        square_x, square_y = square['position']
+        square_center_x = square_x + square_size / 2
+        square_center_y = square_y + square_size / 2
+
+        distance = math.sqrt((square_center_x - island_center[0]) ** 2 + (square_center_y - island_center[1]) ** 2)
+        if distance < island_radius + square_size / 2:
+            return True
+    return False
+
 def game():
     circles = []
     squares = []
@@ -274,6 +285,13 @@ def game():
         screen.blit(beam_surface, (0, 0))
         screen.blit(lighthouse_image, lighthouse_rect)
 
+        island_center = (island_rect.centerx, island_rect.centery)
+        island_radius = min(island_rect.width, island_rect.height) // 2 - 20
+        island_circle = (island_center, island_radius)
+
+        if check_loss(island_circle, squares):
+            endscreen("YOU LOST")
+
         current_time = pygame.time.get_ticks()
 
         draw_squares(squares, current_time, beam_triangle)
@@ -292,11 +310,12 @@ def game():
         render_points(points=points)
 
         if points == n_enemies:
-            victory()
+            endscreen("YOU WIN")
 
         pygame.display.flip()
         clock.tick(60)
 
     pygame.quit()
 
-game()
+if __name__ == '__main__':
+    game()
