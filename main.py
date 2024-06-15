@@ -1,14 +1,10 @@
 import math
 import pygame
+import random
 from consts import *
 from start import *
 
-circles = []
-squares = []
-fading_squares = []
-points=0
-
-def get_points():
+def get_points(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
     perpendicular_dy = dx
 
@@ -79,7 +75,7 @@ def draw_circles(circles):
     # Заменяем старый список новым
     return new_circles
 
-def draw_squares(squares):
+def draw_squares(squares, current_time, beam_triangle):
     for square in squares:
         square_x, square_y = square['position']
         distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
@@ -105,20 +101,20 @@ def draw_squares(squares):
         elif square['state'] == 'normal':
             pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
-def check_collision(circles, squares):
+def check_collision(circles, squares, fading_squares):
     for circle in circles:
         circle_x, circle_y, dx, dy = circle
         for square in squares:
             square_x, square_y = square['position']
             if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):        
-                death_anim(square=square)
+                death_anim(square=square, fading_squares=fading_squares)
                 squares.remove(square)
 
-def death_anim(square):
+def death_anim(square, fading_squares):
     square['fade'] = pygame.time.get_ticks()
     fading_squares.append(square)
 
-def update_fading_squares():
+def update_fading_squares(fading_squares):
     current_time = pygame.time.get_ticks()
     for square in fading_squares:
         elapsed_time = (current_time - square['fade']) / 1000
@@ -132,7 +128,7 @@ def update_fading_squares():
         else:
             fading_squares.remove(square)    
 
-def shoot():
+def shoot(circles):
     mouse_x, mouse_y = pygame.mouse.get_pos()
     dx = mouse_x - (screen_width // 2)
     dy = mouse_y - (screen_height // 2)
@@ -148,92 +144,159 @@ def shoot():
     speed = 10
     circles.append((circle_x, circle_y, dx * speed, dy * speed))
 
+def gen_spawn_points():
+    x = random.randint(0, screen_width)
+    while screen_width // 2 - 400 <= x <= screen_width // 2 + 400:
+        x = random.randint(0, screen_width)
+    
+    y = random.randint(0, screen_height)
+    while screen_height // 2 - 200 <= y <= screen_height // 2 + 200:
+        y = random.randint(0, screen_height)
+    
+    return (x, y)
+
 def render_points(points):
-    print(points)
     points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
     text_rect = points_text.get_rect(center=(screen_width // 2, 30))
     screen.blit(points_text, text_rect)
 
-square_positions = [(1000, 50), (400, 170), (150, 900), (1450, 200), (1700, 900)]
-for pos in square_positions:
-    squares.append({'position': pos, 'state': 'normal', 'start_time': 0, 'fade': 0})
+def victory():
+    victory_screen = pygame.Surface((screen_width, screen_height))
+    victory_screen.fill((0, 0, 0))
 
-running = True
-clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 144)
+    button_font = pygame.font.Font(None, 72)
 
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.KEYDOWN:
-            running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            shoot()
+    # Надпись "YOU WIN"
+    text = font.render("YOU WIN", True, (255, 255, 255))
+    text_rect = text.get_rect(center=(screen_width // 2, screen_height // 3))
 
-    mouse_x, mouse_y = pygame.mouse.get_pos()
+    # Кнопка "Заново"
+    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 50)
+    replay_text = button_font.render("Заново", True, (0, 0, 0))
+    replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
-    dx = mouse_x - (screen_width // 2)
-    dy = mouse_y - (screen_height // 2)
+    # Кнопка "Выйти"
+    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 100, 300, 50)
+    quit_text = button_font.render("Выйти", True, (0, 0, 0))
+    quit_text_rect = quit_text.get_rect(center=quit_button.center)
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if replay_button.collidepoint(event.pos):
+                    # Перезапуск игры
+                    game()
+                elif quit_button.collidepoint(event.pos):
+                    # Выход из игры
+                    pygame.quit()
+
+        victory_screen.fill((0, 0, 0))
+        victory_screen.blit(text, text_rect)
+
+        pygame.draw.rect(victory_screen, (255, 255, 255), replay_button)
+        victory_screen.blit(replay_text, replay_text_rect)
+
+        pygame.draw.rect(victory_screen, (255, 255, 255), quit_button)
+        victory_screen.blit(quit_text, quit_text_rect)
+
+        screen.blit(victory_screen, (0, 0))
+        pygame.display.flip()
     
-    length = math.sqrt(dx ** 2 + dy ** 2)
-    if length > 0:
-        dx /= length
-        dy /= length
+def game():
+    circles = []
+    squares = []
+    fading_squares = []
+    points=0
+    n_enemies = 10
+    square_positions = [()] * n_enemies
 
-    end_x = (screen_width // 2) + dx * beam_length
-    end_y = (screen_height // 2) + dy * beam_length
+    for pos in square_positions:
+        squares.append({'position': gen_spawn_points(), 'state': 'normal', 'start_time': 0, 'fade': 0})
 
-    beam_surface.fill((0, 0, 0, 0))
-    
-    left_x, left_y, right_x, right_y = get_points()
+    running = True
+    clock = pygame.time.Clock()
 
-    beam_triangle = [
-        (left_x, left_y),    # вершина слева
-        (right_x, right_y),  # вершина справа
-        (screen_width // 2, screen_height // 2)  # вершина в центре
-    ]
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.KEYDOWN:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                shoot(circles)
 
-    pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
+        mouse_x, mouse_y = pygame.mouse.get_pos()
 
-    pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)  
-
-    for square in squares:
-        square_x, square_y = square['position']
-
-        direction_x = (screen_width // 2) - square_x
-        direction_y = (screen_height // 2) - square_y
-        distance = math.sqrt(direction_x ** 2 + direction_y ** 2)
-
-        if distance > 0:
-            direction_x /= distance
-            direction_y /= distance
-
-        square_x += direction_x * enemy_speed
-        square_y += direction_y * enemy_speed
-
-        square['position'] = (square_x, square_y)
-
-    screen.fill(blue_color)
-    screen.blit(island_image, island_rect)
-    screen.blit(beam_surface, (0, 0))
-    screen.blit(lighthouse_image, lighthouse_rect)
-
-    current_time = pygame.time.get_ticks()
-
-    draw_squares(squares)
-    update_fading_squares()
-
-    n_sq = len(squares)
-
-    check_collision(circles=circles, squares=squares)
-
-    # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
-    if len(squares) < n_sq:
-        points+=1
+        dx = mouse_x - (screen_width // 2)
+        dy = mouse_y - (screen_height // 2)
         
-    circles = draw_circles(circles)
+        length = math.sqrt(dx ** 2 + dy ** 2)
+        if length > 0:
+            dx /= length
+            dy /= length
 
-    render_points(points=points)
+        end_x = (screen_width // 2) + dx * beam_length
+        end_y = (screen_height // 2) + dy * beam_length
 
-    pygame.display.flip()
-    clock.tick(60)
+        beam_surface.fill((0, 0, 0, 0))
+        
+        left_x, left_y, right_x, right_y = get_points(dx, dy, end_x, end_y)
 
-pygame.quit()
+        beam_triangle = [
+            (left_x, left_y),    # вершина слева
+            (right_x, right_y),  # вершина справа
+            (screen_width // 2, screen_height // 2)  # вершина в центре
+        ]
+
+        pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
+
+        pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)  
+
+        for square in squares:
+            square_x, square_y = square['position']
+
+            direction_x = (screen_width // 2) - square_x
+            direction_y = (screen_height // 2) - square_y
+            distance = math.sqrt(direction_x ** 2 + direction_y ** 2)
+
+            if distance > 0:
+                direction_x /= distance
+                direction_y /= distance
+
+            square_x += direction_x * enemy_speed
+            square_y += direction_y * enemy_speed
+
+            square['position'] = (square_x, square_y)
+
+        screen.fill(blue_color)
+        screen.blit(island_image, island_rect)
+        screen.blit(beam_surface, (0, 0))
+        screen.blit(lighthouse_image, lighthouse_rect)
+
+        current_time = pygame.time.get_ticks()
+
+        draw_squares(squares, current_time, beam_triangle)
+        update_fading_squares(fading_squares)
+
+        n_sq = len(squares)
+
+        check_collision(circles=circles, squares=squares, fading_squares=fading_squares)
+
+        # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
+        if len(squares) < n_sq:
+            points+=1
+            
+        circles = draw_circles(circles)
+
+        render_points(points=points)
+
+        if points == n_enemies:
+            victory()
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+game()

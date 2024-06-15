@@ -2,7 +2,6 @@ import pygame
 import os
 from consts import *
 
-# Инициализация Pygame
 pygame.init()
 pygame.font.init()
 font = pygame.font.Font('font/font.ttf', 50)
