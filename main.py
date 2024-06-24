@@ -145,39 +145,58 @@ def shoot(circles):
     circles.append((circle_x, circle_y, dx * speed, dy * speed))
 
 def gen_spawn_points():
-    x = random.randint(0, screen_width)
-    while screen_width // 2 - 400 <= x <= screen_width // 2 + 400:
+    center_x = screen_width // 2
+    center_y = screen_height // 2
+    radius = 400
+    
+    while True:
         x = random.randint(0, screen_width)
-    
-    y = random.randint(0, screen_height)
-    while screen_height // 2 - 200 <= y <= screen_height // 2 + 200:
         y = random.randint(0, screen_height)
-    
-    return (x, y)
+        distance_to_center = math.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+        
+        if distance_to_center > radius:
+            return (x, y)
 
 def render_points(points):
     points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
-    text_rect = points_text.get_rect(center=(screen_width // 2, 30))
+    text_rect = points_text.get_rect(center=(screen_width // 2 + 130, 30))
     screen.blit(points_text, text_rect)
 
-def endscreen(result):
+def render_level(level):
+    level_text = font.render(f'LEVEL:  {level} ', True, (255, 255, 255))
+    text_rect = level_text.get_rect(center=(screen_width // 2 - 130, 30))
+    screen.blit(level_text, text_rect)
+
+def endscreen(result, curr_level, score):
     victory_screen = pygame.Surface((screen_width, screen_height))
     victory_screen.fill((0, 0, 0))
 
-    font = pygame.font.Font(None, 144)
-    button_font = pygame.font.Font(None, 72)
+    font = pygame.font.Font(None, 90)
+    button_font = pygame.font.Font(None, 60)
 
-    text = font.render(result, True, (255, 255, 255))
-    text_rect = text.get_rect(center=(screen_width // 2, screen_height // 3))
+    text = font.render(result, True, (255, 255, 255))     
+    text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
 
-    # Кнопка "Заново"
-    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-    replay_text = button_font.render("Заново", True, (0, 0, 0))
+    if (result == "YOU LOST"):
+        level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
+    else:
+        level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
+
+    level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
+
+    score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
+    score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
+
+    next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
+    next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
+    next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+
+    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150, 300, 100)
+    replay_text = button_font.render("RESTART", True, (0, 0, 0))
     replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
-    # Кнопка "Выйти"
-    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 200, 300, 100)
-    quit_text = button_font.render("Выйти", True, (0, 0, 0))
+    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300, 300, 100)
+    quit_text = button_font.render("QUIT", True, (0, 0, 0))
     quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
     while True:
@@ -185,15 +204,20 @@ def endscreen(result):
             if event.type == pygame.QUIT:
                 pygame.quit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                if next_level_button.collidepoint(event.pos):
+                    game(level=curr_level+1, points=score)
                 if replay_button.collidepoint(event.pos):
-                    # Перезапуск игры
-                    game()
+                    game(level=1, points=0)
                 elif quit_button.collidepoint(event.pos):
-                    # Выход из игры
-                    pygame.quit()
+                    game(level=0,points=0)
 
         victory_screen.fill((0, 0, 0))
         victory_screen.blit(text, text_rect)
+        victory_screen.blit(level_text, level_rect)
+        victory_screen.blit(score_text, score_rect)
+
+        pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
+        victory_screen.blit(next_level_text, next_level_text_rect)
 
         pygame.draw.rect(victory_screen, (255, 255, 255), replay_button)
         victory_screen.blit(replay_text, replay_text_rect)
@@ -216,12 +240,15 @@ def check_loss(island_circle, squares):
             return True
     return False
 
-def game():
+def game(level, points):
+
+    if (level == 0):
+        pygame.quit() # дописать хендлер выхода из игры - щас ошибка какая-то выползает при выходе: pygame.error: video system not initialized
+
     circles = []
     squares = []
     fading_squares = []
-    points=0
-    n_enemies = 10
+    n_enemies = 5 * level
     square_positions = [()] * n_enemies
 
     for pos in square_positions:
@@ -290,7 +317,7 @@ def game():
         island_circle = (island_center, island_radius)
 
         if check_loss(island_circle, squares):
-            endscreen("YOU LOST")
+            endscreen("YOU LOST", level, points)
 
         current_time = pygame.time.get_ticks()
 
@@ -309,13 +336,13 @@ def game():
 
         render_points(points=points)
 
-        if points == n_enemies:
-            endscreen("YOU WIN")
+        render_level(level)
+
+        if (len(squares)==0):
+            endscreen("LEVEL COMPLETED", level, points)
 
         pygame.display.flip()
         clock.tick(60)
 
-    pygame.quit()
-
 if __name__ == '__main__':
-    game()
+    game(level=1, points=0)

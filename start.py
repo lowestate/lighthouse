@@ -4,7 +4,7 @@ from consts import *
 
 pygame.init()
 pygame.font.init()
-font = pygame.font.Font('font/font.ttf', 50)
+font = pygame.font.Font('font/font.ttf', 70)
 
 info = pygame.display.Info()
 screen_width = info.current_w
@@ -32,3 +32,7 @@ island_rect.center = (screen_width // 2, screen_height // 2)
 
 
 beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)    
+
+
+level = 1
+points=0
