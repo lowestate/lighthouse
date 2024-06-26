@@ -40,10 +40,7 @@ class Square():
 
     def draw_square(self, current_time, beam_triangle):
         square_x, square_y = self.square['position']
-        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
-
-        if distance_to_center < 250:
-            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
+        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)  
 
         if self.square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
             self.square['state'] = 'hit'
@@ -62,6 +59,9 @@ class Square():
         elif self.square['state'] == 'normal':
             pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
+        if distance_to_center < 250:
+            pygame.draw.rect(screen, (200, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
+
     def death_anim(self):
         self.square['fade'] = pygame.time.get_ticks()
 
@@ -78,6 +78,128 @@ class Square():
                 screen.blit(s, (sq_x, sq_y))
             else:
                 fading_squares.remove(square)   
+
+    def check_loss(self, squares, island_circle):
+        island_center, island_radius = island_circle
+        for square in squares:
+            square_x, square_y = square.square['position']
+            square_center_x = square_x + square_size / 2
+            square_center_y = square_y + square_size / 2
+
+            distance = math.sqrt((square_center_x - island_center[0]) ** 2 + (square_center_y - island_center[1]) ** 2)
+            if distance < island_radius + square_size / 2:
+                return True
+        return False
+
+
+class Circle():
+    def __init__(self) -> None:
+        mouse_x, mouse_y = pygame.mouse.get_pos()
+        dx = mouse_x - (screen_width // 2)
+        dy = mouse_y - (screen_height // 2)
+            
+        length = math.sqrt(dx ** 2 + dy ** 2)
+        if length > 0:
+            dx /= length
+            dy /= length
+            
+                
+        circle_x = screen_width // 2
+        circle_y = screen_height // 2
+
+        self.circle = (circle_x, circle_y, dx * speed, dy * speed)
+
+    def draw_circles(self, circles):
+        new_circles = []
+        for circle in circles:
+            # Извлечение координат и скорости круга
+            circle_x, circle_y, dx, dy = circle
+            # Обновление позиции круга
+            circle_x += dx
+            circle_y += dy
+            # Проверка, выходит ли круг за границы экрана
+            if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
+                continue  # Пропускаем этот круг
+            # Отрисовка круга
+            pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
+            # Добавляем круг в новый список
+            new_circles.append((circle_x, circle_y, dx, dy))
+        # Заменяем старый список новым
+        return new_circles
+
+
+class Screen():
+    def render_points(self, points):
+        points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
+        text_rect = points_text.get_rect(center=(screen_width // 2 + 130, 30))
+        screen.blit(points_text, text_rect)
+
+    def render_level(self, level):
+        level_text = font.render(f'LEVEL:  {level} ', True, (255, 255, 255))
+        text_rect = level_text.get_rect(center=(screen_width // 2 - 130, 30))
+        screen.blit(level_text, text_rect)
+
+    def endscreen(self, result, curr_level, score):
+        victory_screen = pygame.Surface((screen_width, screen_height))
+        victory_screen.fill((0, 0, 0))
+
+        font = pygame.font.Font(None, 90)
+        button_font = pygame.font.Font(None, 60)
+
+        text = font.render(result, True, (255, 255, 255))     
+        text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
+
+        if (result == "YOU LOST"):
+            level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
+        else:
+            level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
+
+        level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
+
+        score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
+        score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
+
+        next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
+        next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
+        next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+
+        replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150, 300, 100)
+        replay_text = button_font.render("RESTART", True, (0, 0, 0))
+        replay_text_rect = replay_text.get_rect(center=replay_button.center)
+
+        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300, 300, 100)
+        quit_text = button_font.render("QUIT", True, (0, 0, 0))
+        quit_text_rect = quit_text.get_rect(center=quit_button.center)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if next_level_button.collidepoint(event.pos):
+                        game(level=curr_level+1, points=score)
+                    if replay_button.collidepoint(event.pos):
+                        game(level=1, points=0)
+                    elif quit_button.collidepoint(event.pos):
+                        game(level=0,points=0)
+
+            victory_screen.fill((0, 0, 0))
+            victory_screen.blit(text, text_rect)
+            victory_screen.blit(level_text, level_rect)
+            victory_screen.blit(score_text, score_rect)
+
+            pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
+            victory_screen.blit(next_level_text, next_level_text_rect)
+
+            pygame.draw.rect(victory_screen, (255, 255, 255), replay_button)
+            victory_screen.blit(replay_text, replay_text_rect)
+
+            pygame.draw.rect(victory_screen, (255, 255, 255), quit_button)
+            victory_screen.blit(quit_text, quit_text_rect)
+
+            screen.blit(victory_screen, (0, 0))
+            pygame.display.flip()
+
 
 def get_points(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
@@ -132,24 +254,6 @@ def point_inside_triangle(x, y, triangle):
     # то точка находится внутри треугольника
     return main_triangle_area == triangle1_area + triangle2_area + triangle3_area
 
-def draw_circles(circles):
-    new_circles = []
-    for circle in circles:
-        # Извлечение координат и скорости круга
-        circle_x, circle_y, dx, dy = circle
-        # Обновление позиции круга
-        circle_x += dx
-        circle_y += dy
-        # Проверка, выходит ли круг за границы экрана
-        if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
-            continue  # Пропускаем этот круг
-        # Отрисовка круга
-        pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
-        # Добавляем круг в новый список
-        new_circles.append((circle_x, circle_y, dx, dy))
-    # Заменяем старый список новым
-    return new_circles
-
 def check_collision(circles, squares, fading_squares):
     for circle in circles:
         circle_x, circle_y, dx, dy = circle
@@ -160,118 +264,6 @@ def check_collision(circles, squares, fading_squares):
                 fading_squares.append(square)
                 squares.remove(square) 
 
-def shoot(circles):
-    mouse_x, mouse_y = pygame.mouse.get_pos()
-    dx = mouse_x - (screen_width // 2)
-    dy = mouse_y - (screen_height // 2)
-           
-    length = math.sqrt(dx ** 2 + dy ** 2)
-    if length > 0:
-        dx /= length
-        dy /= length
-           
-            
-    circle_x = screen_width // 2
-    circle_y = screen_height // 2
-    speed = 10
-    circles.append((circle_x, circle_y, dx * speed, dy * speed))
-
-def gen_spawn_points():
-    center_x = screen_width // 2
-    center_y = screen_height // 2
-    radius = 400
-    
-    while True:
-        x = random.randint(0, screen_width)
-        y = random.randint(0, screen_height)
-        distance_to_center = math.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
-        
-        if distance_to_center > radius:
-            return (x, y)
-
-def render_points(points):
-    points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
-    text_rect = points_text.get_rect(center=(screen_width // 2 + 130, 30))
-    screen.blit(points_text, text_rect)
-
-def render_level(level):
-    level_text = font.render(f'LEVEL:  {level} ', True, (255, 255, 255))
-    text_rect = level_text.get_rect(center=(screen_width // 2 - 130, 30))
-    screen.blit(level_text, text_rect)
-
-def endscreen(result, curr_level, score):
-    victory_screen = pygame.Surface((screen_width, screen_height))
-    victory_screen.fill((0, 0, 0))
-
-    font = pygame.font.Font(None, 90)
-    button_font = pygame.font.Font(None, 60)
-
-    text = font.render(result, True, (255, 255, 255))     
-    text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
-
-    if (result == "YOU LOST"):
-        level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
-    else:
-        level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
-
-    level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
-
-    score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
-    score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
-
-    next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-    next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
-    next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
-
-    replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150, 300, 100)
-    replay_text = button_font.render("RESTART", True, (0, 0, 0))
-    replay_text_rect = replay_text.get_rect(center=replay_button.center)
-
-    quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300, 300, 100)
-    quit_text = button_font.render("QUIT", True, (0, 0, 0))
-    quit_text_rect = quit_text.get_rect(center=quit_button.center)
-
-    while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if next_level_button.collidepoint(event.pos):
-                    game(level=curr_level+1, points=score)
-                if replay_button.collidepoint(event.pos):
-                    game(level=1, points=0)
-                elif quit_button.collidepoint(event.pos):
-                    game(level=0,points=0)
-
-        victory_screen.fill((0, 0, 0))
-        victory_screen.blit(text, text_rect)
-        victory_screen.blit(level_text, level_rect)
-        victory_screen.blit(score_text, score_rect)
-
-        pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
-        victory_screen.blit(next_level_text, next_level_text_rect)
-
-        pygame.draw.rect(victory_screen, (255, 255, 255), replay_button)
-        victory_screen.blit(replay_text, replay_text_rect)
-
-        pygame.draw.rect(victory_screen, (255, 255, 255), quit_button)
-        victory_screen.blit(quit_text, quit_text_rect)
-
-        screen.blit(victory_screen, (0, 0))
-        pygame.display.flip()
-
-def check_loss(island_circle, squares):
-    island_center, island_radius = island_circle
-    for square in squares:
-        square_x, square_y = square.square['position']
-        square_center_x = square_x + square_size / 2
-        square_center_y = square_y + square_size / 2
-
-        distance = math.sqrt((square_center_x - island_center[0]) ** 2 + (square_center_y - island_center[1]) ** 2)
-        if distance < island_radius + square_size / 2:
-            return True
-    return False
-
 def game(level, points):
 
     if (level == 0):
@@ -281,9 +273,8 @@ def game(level, points):
     squares = []
     fading_squares = []
     n_enemies = 5 * level
-    square_positions = [()] * n_enemies
 
-    for _ in square_positions:
+    for _ in range(n_enemies):
         squares.append(Square())
 
     running = True
@@ -291,10 +282,11 @@ def game(level, points):
 
     while running:
         for event in pygame.event.get():
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                shoot(circles)
+                new_c = Circle()
+                circles.append(new_c.circle)
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -335,8 +327,8 @@ def game(level, points):
         island_radius = min(island_rect.width, island_rect.height) // 2 - 20
         island_circle = (island_center, island_radius)
 
-        if check_loss(island_circle, squares):
-            endscreen("YOU LOST", level, points)
+        if sq.check_loss(squares, island_circle):
+            Screen().endscreen("YOU LOST", level, points)
 
         current_time = pygame.time.get_ticks()
 
@@ -354,15 +346,15 @@ def game(level, points):
         # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
         if len(squares) < n_sq:
             points+=1
-            
-        circles = draw_circles(circles)
+        
+        circles = Circle().draw_circles(circles)
 
-        render_points(points=points)
+        Screen().render_points(points)
 
-        render_level(level)
+        Screen().render_level(level)
 
         if (len(squares)==0):
-            endscreen("LEVEL COMPLETED", level, points)
+            Screen().endscreen("LEVEL COMPLETED", level, points)
 
         pygame.display.flip()
         clock.tick(60)
