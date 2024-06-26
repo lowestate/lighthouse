@@ -4,6 +4,81 @@ import random
 from consts import *
 from start import *
 
+
+class Square():
+    def __init__(self) -> None:
+        self.square = {'position': self.gen_spawn_points(), 'state': 'normal', 'start_time': 0, 'fade': 0}
+
+    def gen_spawn_points(self):
+        center_x = screen_width // 2
+        center_y = screen_height // 2
+        radius = 400
+        
+        while True:
+            x = random.randint(0, screen_width)
+            y = random.randint(0, screen_height)
+            distance_to_center = math.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+            
+            if distance_to_center > radius:
+                return (x, y)
+    
+    def upd_sq_pos(self):
+        square_x, square_y = self.square['position']
+
+        direction_x = (screen_width // 2) - square_x
+        direction_y = (screen_height // 2) - square_y
+        distance = math.sqrt(direction_x ** 2 + direction_y ** 2)
+
+        if distance > 0:
+            direction_x /= distance
+            direction_y /= distance
+
+        square_x += direction_x * enemy_speed
+        square_y += direction_y * enemy_speed
+
+        self.square['position'] = (square_x, square_y)
+
+    def draw_square(self, current_time, beam_triangle):
+        square_x, square_y = self.square['position']
+        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
+
+        if distance_to_center < 250:
+            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
+
+        if self.square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
+            self.square['state'] = 'hit'
+            self.square['start_time'] = current_time
+
+        if self.square['state'] == 'hit':
+            elapsed_time = (current_time - self.square['start_time']) / 1000
+            if elapsed_time < 1:
+                alpha = max(0, int(255 * (1 - elapsed_time)))
+                square_color = (255, 0, 0, alpha)
+                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                s.fill(square_color)
+                screen.blit(s, (square_x, square_y))
+            else:
+                self.square['state'] = 'normal'
+        elif self.square['state'] == 'normal':
+            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
+
+    def death_anim(self):
+        self.square['fade'] = pygame.time.get_ticks()
+
+    def update_fading_squares(self, fading_squares):
+        current_time = pygame.time.get_ticks()
+        for square in fading_squares:
+            elapsed_time = (current_time - square.square['fade']) / 1000
+            if elapsed_time < 1:
+                alpha = max(0, int(255 * (1 - elapsed_time / 1)))
+                square_color = (240, 240, 240, alpha)
+                sq_x, sq_y = square.square['position']
+                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                s.fill(square_color)
+                screen.blit(s, (sq_x, sq_y))
+            else:
+                fading_squares.remove(square)   
+
 def get_points(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
     perpendicular_dy = dx
@@ -75,58 +150,15 @@ def draw_circles(circles):
     # Заменяем старый список новым
     return new_circles
 
-def draw_squares(squares, current_time, beam_triangle):
-    for square in squares:
-        square_x, square_y = square['position']
-        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
-
-        if distance_to_center < 250:
-            pygame.draw.rect(screen, (255, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
-            continue
-
-        if square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
-            square['state'] = 'hit'
-            square['start_time'] = current_time
-
-        if square['state'] == 'hit':
-            elapsed_time = (current_time - square['start_time']) / 1000
-            if elapsed_time < 1:
-                alpha = max(0, int(255 * (1 - elapsed_time)))
-                square_color = (255, 0, 0, alpha)
-                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
-                s.fill(square_color)
-                screen.blit(s, (square_x, square_y))
-            else:
-                square['state'] = 'normal'
-        elif square['state'] == 'normal':
-            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
-
 def check_collision(circles, squares, fading_squares):
     for circle in circles:
         circle_x, circle_y, dx, dy = circle
         for square in squares:
-            square_x, square_y = square['position']
+            square_x, square_y = square.square['position']
             if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):        
-                death_anim(square=square, fading_squares=fading_squares)
-                squares.remove(square)
-
-def death_anim(square, fading_squares):
-    square['fade'] = pygame.time.get_ticks()
-    fading_squares.append(square)
-
-def update_fading_squares(fading_squares):
-    current_time = pygame.time.get_ticks()
-    for square in fading_squares:
-        elapsed_time = (current_time - square['fade']) / 1000
-        if elapsed_time < 1:
-            alpha = max(0, int(255 * (1 - elapsed_time / 1)))
-            square_color = (240, 240, 240, alpha)
-            sq_x, sq_y = square['position']
-            s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
-            s.fill(square_color)
-            screen.blit(s, (sq_x, sq_y))
-        else:
-            fading_squares.remove(square)    
+                square.death_anim()
+                fading_squares.append(square)
+                squares.remove(square) 
 
 def shoot(circles):
     mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -231,7 +263,7 @@ def endscreen(result, curr_level, score):
 def check_loss(island_circle, squares):
     island_center, island_radius = island_circle
     for square in squares:
-        square_x, square_y = square['position']
+        square_x, square_y = square.square['position']
         square_center_x = square_x + square_size / 2
         square_center_y = square_y + square_size / 2
 
@@ -251,8 +283,8 @@ def game(level, points):
     n_enemies = 5 * level
     square_positions = [()] * n_enemies
 
-    for pos in square_positions:
-        squares.append({'position': gen_spawn_points(), 'state': 'normal', 'start_time': 0, 'fade': 0})
+    for _ in square_positions:
+        squares.append(Square())
 
     running = True
     clock = pygame.time.Clock()
@@ -291,21 +323,8 @@ def game(level, points):
 
         pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)  
 
-        for square in squares:
-            square_x, square_y = square['position']
-
-            direction_x = (screen_width // 2) - square_x
-            direction_y = (screen_height // 2) - square_y
-            distance = math.sqrt(direction_x ** 2 + direction_y ** 2)
-
-            if distance > 0:
-                direction_x /= distance
-                direction_y /= distance
-
-            square_x += direction_x * enemy_speed
-            square_y += direction_y * enemy_speed
-
-            square['position'] = (square_x, square_y)
+        for sq in squares:
+            sq.upd_sq_pos()
 
         screen.fill(blue_color)
         screen.blit(island_image, island_rect)
@@ -321,8 +340,12 @@ def game(level, points):
 
         current_time = pygame.time.get_ticks()
 
-        draw_squares(squares, current_time, beam_triangle)
-        update_fading_squares(fading_squares)
+        for sq in squares:
+            sq.draw_square(current_time, beam_triangle)
+        
+        for sq in squares:
+            sq.update_fading_squares(fading_squares)
+            break
 
         n_sq = len(squares)
 
