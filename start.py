@@ -36,3 +36,7 @@ beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
 
 level = 1
 points=0
+
+
+T1enemy_image_path = os.path.join(os.path.dirname(__file__), 'sprites/enemy1.png')
+T1enemy_image = pygame.image.load(T1enemy_image_path).convert_alpha()

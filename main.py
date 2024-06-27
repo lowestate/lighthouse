@@ -6,8 +6,15 @@ from start import *
 
 
 class Square():
-    def __init__(self) -> None:
-        self.square = {'position': self.gen_spawn_points(), 'state': 'normal', 'start_time': 0, 'fade': 0}
+    def __init__(self, sprite) -> None:
+        self.square = {
+            'position': self.gen_spawn_points(), 
+            'state': 'normal', 
+            'start_time': 0, 
+            'fade': 0, 
+            'alpha': 0}
+        self.sprite = sprite
+        self.resized_sprite = pygame.transform.scale(sprite, (sprite.get_width() // 4, sprite.get_height() // 4))
 
     def gen_spawn_points(self):
         center_x = screen_width // 2
@@ -40,42 +47,62 @@ class Square():
 
     def draw_square(self, current_time, beam_triangle):
         square_x, square_y = self.square['position']
-        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)  
+        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
 
-        if self.square['state'] == 'normal' and any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
+        center_x, center_y = screen_width // 2, screen_height // 2
+        angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))
+
+        resized_sprite_width = self.resized_sprite.get_width()
+        resized_sprite_height = self.resized_sprite.get_height()
+        sprite_x = square_x + (square_size - resized_sprite_width) // 2
+        sprite_y = square_y + (square_size - resized_sprite_height) // 2
+        sprite_with_alpha = self.resized_sprite.copy()
+
+        if any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
             self.square['state'] = 'hit'
             self.square['start_time'] = current_time
+            self.square['alpha'] = 255 
 
         if self.square['state'] == 'hit':
             elapsed_time = (current_time - self.square['start_time']) / 1000
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time)))
-                square_color = (255, 0, 0, alpha)
-                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
-                s.fill(square_color)
-                screen.blit(s, (square_x, square_y))
+                sprite_with_alpha.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MULT)
+                rotated_sprite = pygame.transform.rotate(sprite_with_alpha, angle)
+                screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + resized_sprite_width // 2, sprite_y + resized_sprite_height // 2)))
             else:
                 self.square['state'] = 'normal'
-        elif self.square['state'] == 'normal':
-            pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
+                self.square['alpha'] = 0
 
-        if distance_to_center < 250:
-            pygame.draw.rect(screen, (200, 0, 0), pygame.Rect(square_x, square_y, square_size, square_size))
+        elif self.square['state'] == 'normal' or distance_to_center < 250:
+            if 'alpha' not in self.square:
+                self.square['alpha'] = 0
 
-    def death_anim(self):
-        self.square['fade'] = pygame.time.get_ticks()
+            sprite_with_alpha.fill((255, 255, 255, self.square['alpha']), special_flags=pygame.BLEND_RGBA_MULT)
+            rotated_sprite = pygame.transform.rotate(sprite_with_alpha, angle)
+            screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + resized_sprite_width // 2, sprite_y + resized_sprite_height // 2)))
+
+    def trigger_death_anim(self, current_time):
+        self.square['state'] = 'death_anim'
+        self.square['fade'] = current_time
+        self.square['alpha'] = 255
 
     def update_fading_squares(self, fading_squares):
         current_time = pygame.time.get_ticks()
+        center_x, center_y = screen_width // 2, screen_height // 2
+
         for square in fading_squares:
             elapsed_time = (current_time - square.square['fade']) / 1000
+            square_x, square_y = square.square['position']
+            angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time / 1)))
-                square_color = (240, 240, 240, alpha)
-                sq_x, sq_y = square.square['position']
-                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
-                s.fill(square_color)
-                screen.blit(s, (sq_x, sq_y))
+                
+                sprite_x = square_x + (square_size - self.resized_sprite.get_width()) // 2
+                sprite_y = square_y + (square_size - self.resized_sprite.get_height()) // 2       
+                self.resized_sprite.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_MULT)
+                rotated_sprite = pygame.transform.rotate(self.resized_sprite, angle)
+                screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + self.resized_sprite.copy().get_width() // 2, sprite_y + self.resized_sprite.copy().get_height() // 2)))
             else:
                 fading_squares.remove(square)   
 
@@ -260,7 +287,7 @@ def check_collision(circles, squares, fading_squares):
         for square in squares:
             square_x, square_y = square.square['position']
             if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):        
-                square.death_anim()
+                square.trigger_death_anim(pygame.time.get_ticks())
                 fading_squares.append(square)
                 squares.remove(square) 
 
@@ -274,8 +301,10 @@ def game(level, points):
     fading_squares = []
     n_enemies = 5 * level
 
+    enemy_sprite = T1enemy_image
+
     for _ in range(n_enemies):
-        squares.append(Square())
+        squares.append(Square(enemy_sprite))
 
     running = True
     clock = pygame.time.Clock()
@@ -334,10 +363,8 @@ def game(level, points):
 
         for sq in squares:
             sq.draw_square(current_time, beam_triangle)
-        
-        for sq in squares:
-            sq.update_fading_squares(fading_squares)
-            break
+
+        Square(enemy_sprite).update_fading_squares(fading_squares)
 
         n_sq = len(squares)
 

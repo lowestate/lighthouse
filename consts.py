@@ -1,5 +1,5 @@
-# фон
-blue_color = (1, 8, 13)
+# фон #01080d
+blue_color = (1, 8, 13) 
 
 # размер маяка
 lh_width = 130
@@ -22,5 +22,3 @@ speed = 10
 enemy_speed = 0.5
 
 square_size = 40
-
-
