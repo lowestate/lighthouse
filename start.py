@@ -40,3 +40,7 @@ points=0
 
 T1enemy_image_path = os.path.join(os.path.dirname(__file__), 'sprites/enemy1.png')
 T1enemy_image = pygame.image.load(T1enemy_image_path).convert_alpha()
+
+
+bullet_image_path = os.path.join(os.path.dirname(__file__), 'sprites/rbullet.png')
+bullet_image = pygame.image.load(bullet_image_path).convert_alpha()

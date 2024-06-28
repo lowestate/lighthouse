@@ -1,4 +1,5 @@
 import math
+import time
 import pygame
 import random
 from consts import *
@@ -6,7 +7,7 @@ from start import *
 
 
 class Square():
-    def __init__(self, sprite) -> None:
+    def __init__(self, sprite, speed) -> None:
         self.square = {
             'position': self.gen_spawn_points(), 
             'state': 'normal', 
@@ -15,6 +16,7 @@ class Square():
             'alpha': 0}
         self.sprite = sprite
         self.resized_sprite = pygame.transform.scale(sprite, (sprite.get_width() // 4, sprite.get_height() // 4))
+        self.speed = speed
 
     def gen_spawn_points(self):
         center_x = screen_width // 2
@@ -40,8 +42,8 @@ class Square():
             direction_x /= distance
             direction_y /= distance
 
-        square_x += direction_x * enemy_speed
-        square_y += direction_y * enemy_speed
+        square_x += direction_x * self.speed
+        square_y += direction_y * self.speed
 
         self.square['position'] = (square_x, square_y)
 
@@ -49,16 +51,16 @@ class Square():
         square_x, square_y = self.square['position']
         distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
 
-        center_x, center_y = screen_width // 2, screen_height // 2
-        angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))
-
         resized_sprite_width = self.resized_sprite.get_width()
         resized_sprite_height = self.resized_sprite.get_height()
         sprite_x = square_x + (square_size - resized_sprite_width) // 2
         sprite_y = square_y + (square_size - resized_sprite_height) // 2
-        sprite_with_alpha = self.resized_sprite.copy()
+        sprite_with_alpha = self.resized_sprite.copy()\
+        
+        center_x, center_y = screen_width // 2, screen_height // 2
+        angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))  
 
-        if any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
+        if distance_to_center < 300 or any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
             self.square['state'] = 'hit'
             self.square['start_time'] = current_time
             self.square['alpha'] = 255 
@@ -74,7 +76,7 @@ class Square():
                 self.square['state'] = 'normal'
                 self.square['alpha'] = 0
 
-        elif self.square['state'] == 'normal' or distance_to_center < 250:
+        elif self.square['state'] == 'normal':
             if 'alpha' not in self.square:
                 self.square['alpha'] = 0
 
@@ -120,7 +122,7 @@ class Square():
 
 
 class Circle():
-    def __init__(self) -> None:
+    def __init__(self, sprite) -> None:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         dx = mouse_x - (screen_width // 2)
         dy = mouse_y - (screen_height // 2)
@@ -135,6 +137,9 @@ class Circle():
         circle_y = screen_height // 2
 
         self.circle = (circle_x, circle_y, dx * speed, dy * speed)
+        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 4, sprite.get_height() // 4))
+        self.mouse_x = mouse_x
+        self.mouse_y = mouse_y
 
     def draw_circles(self, circles):
         new_circles = []
@@ -147,8 +152,18 @@ class Circle():
             # Проверка, выходит ли круг за границы экрана
             if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
                 continue  # Пропускаем этот круг
-            # Отрисовка круга
-            pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
+            
+            # Вычисление угла поворота в сторону курсора
+            
+            angle = math.degrees(math.atan2(self.mouse_y - circle_y, self.mouse_x - circle_x)) - 90  # Вычитание 90, чтобы спрайт смотрел вверх
+            
+            # Поворот спрайта
+            rotated_sprite = pygame.transform.rotate(self.sprite, angle)
+            rotated_rect = rotated_sprite.get_rect(center=(int(circle_x), int(circle_y)))
+            
+            # Отрисовка спрайта
+            screen.blit(rotated_sprite, rotated_rect.topleft)
+            
             # Добавляем круг в новый список
             new_circles.append((circle_x, circle_y, dx, dy))
         # Заменяем старый список новым
@@ -198,17 +213,37 @@ class Screen():
         quit_text = button_font.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
+        alpha = 0
+        fade_duration = 1500  # in milliseconds
+        clock = pygame.time.Clock()
+        start_time = pygame.time.get_ticks()
+
         while True:
+            elapsed_time = pygame.time.get_ticks() - start_time
+            if elapsed_time < fade_duration:
+                alpha = int((elapsed_time / fade_duration) * 255)
+            else:
+                alpha = 255
+
+            victory_screen.set_alpha(alpha)
+            text.set_alpha(alpha)
+            level_text.set_alpha(alpha)
+            score_text.set_alpha(alpha)
+            next_level_text.set_alpha(alpha)
+            replay_text.set_alpha(alpha)
+            quit_text.set_alpha(alpha)
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
+                    return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if next_level_button.collidepoint(event.pos):
-                        game(level=curr_level+1, points=score)
+                        game(level=curr_level + 1, points=score)
                     if replay_button.collidepoint(event.pos):
                         game(level=1, points=0)
                     elif quit_button.collidepoint(event.pos):
-                        game(level=0,points=0)
+                        game(level=0, points=0)
 
             victory_screen.fill((0, 0, 0))
             victory_screen.blit(text, text_rect)
@@ -226,6 +261,7 @@ class Screen():
 
             screen.blit(victory_screen, (0, 0))
             pygame.display.flip()
+            clock.tick(60)
 
 
 def get_points(dx, dy, end_x, end_y):
@@ -299,12 +335,14 @@ def game(level, points):
     circles = []
     squares = []
     fading_squares = []
-    n_enemies = 5 * level
+    n_enemies = level * 2
+    speed = math.sqrt(level) / 2.5
 
     enemy_sprite = T1enemy_image
+    bullet = bullet_image
 
     for _ in range(n_enemies):
-        squares.append(Square(enemy_sprite))
+        squares.append(Square(enemy_sprite, speed))
 
     running = True
     clock = pygame.time.Clock()
@@ -314,7 +352,7 @@ def game(level, points):
             if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                new_c = Circle()
+                new_c = Circle(bullet)
                 circles.append(new_c.circle)
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -364,7 +402,7 @@ def game(level, points):
         for sq in squares:
             sq.draw_square(current_time, beam_triangle)
 
-        Square(enemy_sprite).update_fading_squares(fading_squares)
+        Square(enemy_sprite, speed).update_fading_squares(fading_squares)
 
         n_sq = len(squares)
 
@@ -373,8 +411,8 @@ def game(level, points):
         # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
         if len(squares) < n_sq:
             points+=1
-        
-        circles = Circle().draw_circles(circles)
+
+        circles = Circle(bullet).draw_circles(circles)
 
         Screen().render_points(points)
 

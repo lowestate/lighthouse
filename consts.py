@@ -19,6 +19,4 @@ circle_color = (255, 0, 0)  # Красный цвет
 speed = 10
 
 # враг
-enemy_speed = 0.5
-
 square_size = 40
