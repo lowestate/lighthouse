@@ -137,7 +137,7 @@ class Circle():
         circle_y = screen_height // 2
 
         self.circle = (circle_x, circle_y, dx * speed, dy * speed)
-        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 4, sprite.get_height() // 4))
+        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 5, sprite.get_height() // 5))
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
@@ -168,7 +168,6 @@ class Circle():
             new_circles.append((circle_x, circle_y, dx, dy))
         # Заменяем старый список новым
         return new_circles
-
 
 class Screen():
     def render_points(self, points):
@@ -263,6 +262,48 @@ class Screen():
             pygame.display.flip()
             clock.tick(60)
 
+    def startscreen(self):
+        start_screen = pygame.Surface((screen_width, screen_height))
+        start_screen.fill((0, 0, 0))
+
+        logo_font = pygame.font.Font(None, 200)
+        button_font = pygame.font.Font(None, 60)
+
+        logo = logo_font.render('LIGHTHOUSE', True, (255, 255, 255))     
+        logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))
+
+        play_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
+        play_text = button_font.render("PLAY", True, (0, 0, 0))
+        play_text_rect = play_text.get_rect(center=play_button.center)
+
+        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 200, 300, 100)
+        quit_text = button_font.render("QUIT", True, (0, 0, 0))
+        quit_text_rect = play_text.get_rect(center=quit_button.center)
+
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if play_button.collidepoint(event.pos):
+                        game(level=1, points=0)
+                    if quit_button.collidepoint(event.pos):
+                        pygame.quit()
+
+            start_screen.fill((0, 0, 0))
+
+            start_screen.blit(logo, logo_rect)
+
+            pygame.draw.rect(start_screen, (255, 255, 255), play_button)
+            start_screen.blit(play_text, play_text_rect)
+
+            pygame.draw.rect(start_screen, (255, 255, 255), quit_button)
+            start_screen.blit(quit_text, quit_text_rect)
+
+            screen.blit(start_screen, (0, 0))
+            pygame.display.flip()
+
 
 def get_points(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
@@ -336,7 +377,7 @@ def game(level, points):
     squares = []
     fading_squares = []
     n_enemies = level * 2
-    speed = math.sqrt(level) / 2.5
+    speed = math.sqrt(level) / 2
 
     enemy_sprite = T1enemy_image
     bullet = bullet_image
@@ -346,6 +387,7 @@ def game(level, points):
 
     running = True
     clock = pygame.time.Clock()
+    current_frame = 0
 
     while running:
         for event in pygame.event.get():
@@ -385,7 +427,9 @@ def game(level, points):
         for sq in squares:
             sq.upd_sq_pos()
 
-        screen.fill(blue_color)
+        current_frame = (current_frame + 1) % frame_count
+        screen.blit(frames[current_frame], (0, 0))
+        #screen.fill(blue_color)
         screen.blit(island_image, island_rect)
         screen.blit(beam_surface, (0, 0))
         screen.blit(lighthouse_image, lighthouse_rect)
@@ -425,4 +469,4 @@ def game(level, points):
         clock.tick(60)
 
 if __name__ == '__main__':
-    game(level=1, points=0)
+    Screen().startscreen()
