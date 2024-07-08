@@ -63,3 +63,16 @@ except EOFError:
 # Получение информации о количестве кадров и задержке
 frame_count = len(frames)
 frame_durations = gif.info['duration'] / 1000  # Длительность одного кадра в секундах
+
+# right arrow
+r_arrow_image_path = os.path.join(os.path.dirname(__file__), 'graphics/other/arrow.png')
+r_arrow_image = pygame.image.load(r_arrow_image_path)
+r_arrow_image = pygame.transform.scale(r_arrow_image, (r_arrow_image.get_width() // 2, r_arrow_image.get_height() // 2))
+r_arrow_rect = r_arrow_image.get_rect()
+r_arrow_rect.center = (screen_width // 2 + 300, screen_height // 2)
+
+# left arrow
+l_arrow_image = r_arrow_image.copy()
+l_arrow_image = pygame.transform.flip(l_arrow_image, True, False) # flip_x : True, flip_y : False - отображение по горизонтали
+l_arrow_rect = l_arrow_image.get_rect()
+l_arrow_rect.center = (screen_width // 2 - 300, screen_height // 2)

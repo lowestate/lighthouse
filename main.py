@@ -131,7 +131,6 @@ class Circle():
         if length > 0:
             dx /= length
             dy /= length
-            
                 
         circle_x = screen_width // 2
         circle_y = screen_height // 2
@@ -262,6 +261,38 @@ class Screen():
             pygame.display.flip()
             clock.tick(60)
 
+    def level_screen(self):
+        new_island_image = pygame.transform.scale(island_image, (island_image.get_width() * 1.3, island_image.get_height() * 1.3))
+        new_island_image_rect = new_island_image.get_rect()
+        new_island_image_rect.center = (screen_width // 2, screen_height // 2)
+
+        new_lh_image = pygame.transform.scale(lighthouse_image, (lighthouse_image.get_width() * 1.3, lighthouse_image.get_height() * 1.3))
+        new_lh_image_rect = new_lh_image.get_rect()
+        new_lh_image_rect.center = (screen_width // 2, screen_height // 2)
+
+        running = True
+        while running:
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
+                    pygame.quit()
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    if new_island_image_rect.collidepoint(event.pos):
+                        game(level=1, points=0)
+                    if r_arrow_image.collidepoint(event.pos):
+                        pass
+                    if l_arrow_image.collidepoint(event.pos):
+                        pass
+                        
+            screen.fill(blue_color)
+
+            screen.blit(island_image, island_rect)
+            screen.blit(new_lh_image, new_lh_image_rect)
+            screen.blit(r_arrow_image, r_arrow_rect)
+            screen.blit(l_arrow_image, l_arrow_rect)
+            screen.blit(beam_surface, (0, 0))
+            
+            pygame.display.flip()
+
     def startscreen(self):
         start_screen = pygame.Surface((screen_width, screen_height))
         start_screen.fill((0, 0, 0))
@@ -272,13 +303,17 @@ class Screen():
         logo = logo_font.render('LIGHTHOUSE', True, (255, 255, 255))     
         logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))
 
-        play_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-        play_text = button_font.render("PLAY", True, (0, 0, 0))
+        play_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2, 400, 100)
+        play_text = button_font.render("ENDLESS MODE", True, (0, 0, 0))
         play_text_rect = play_text.get_rect(center=play_button.center)
 
-        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 200, 300, 100)
+        level_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 150, 400, 100)
+        level_text = button_font.render("CHOOSE A LEVEL", True, (0, 0, 0))
+        level_text_rect = level_text.get_rect(center=level_button.center)
+
+        quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 300, 400, 100)
         quit_text = button_font.render("QUIT", True, (0, 0, 0))
-        quit_text_rect = play_text.get_rect(center=quit_button.center)
+        quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
         while True:
             for event in pygame.event.get():
@@ -288,6 +323,8 @@ class Screen():
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if play_button.collidepoint(event.pos):
                         game(level=1, points=0)
+                    if level_button.collidepoint(event.pos):
+                        self.level_screen()
                     if quit_button.collidepoint(event.pos):
                         pygame.quit()
 
@@ -297,6 +334,9 @@ class Screen():
 
             pygame.draw.rect(start_screen, (255, 255, 255), play_button)
             start_screen.blit(play_text, play_text_rect)
+
+            pygame.draw.rect(start_screen, (255, 255, 255), level_button)
+            start_screen.blit(level_text, level_text_rect)
 
             pygame.draw.rect(start_screen, (255, 255, 255), quit_button)
             start_screen.blit(quit_text, quit_text_rect)
@@ -429,7 +469,6 @@ def game(level, points):
 
         current_frame = (current_frame + 1) % frame_count
         screen.blit(frames[current_frame], (0, 0))
-        #screen.fill(blue_color)
         screen.blit(island_image, island_rect)
         screen.blit(beam_surface, (0, 0))
         screen.blit(lighthouse_image, lighthouse_rect)
