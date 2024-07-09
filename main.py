@@ -49,40 +49,26 @@ class Square():
 
     def draw_square(self, current_time, beam_triangle):
         square_x, square_y = self.square['position']
-        distance_to_center = math.sqrt((square_x + 20 - screen_width // 2) ** 2 + (square_y + 20 - screen_height // 2) ** 2)
+        distance_to_center = math.sqrt((square_x + square_size // 2 - screen_width // 2) ** 2 + (square_y + square_size // 2 - screen_height // 2) ** 2)  
 
-        resized_sprite_width = self.resized_sprite.get_width()
-        resized_sprite_height = self.resized_sprite.get_height()
-        sprite_x = square_x + (square_size - resized_sprite_width) // 2
-        sprite_y = square_y + (square_size - resized_sprite_height) // 2
-        sprite_with_alpha = self.resized_sprite.copy()\
-        
-        center_x, center_y = screen_width // 2, screen_height // 2
-        angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))  
+        pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
-        if distance_to_center < 300 or any(point_inside_triangle(square_x, square_y, beam_triangle) for square_x, square_y in [(square_x, square_y), (square_x + square_size, square_y), (square_x, square_y + square_size), (square_x + square_size, square_y + square_size)]):
-            self.square['state'] = 'hit'
-            self.square['start_time'] = current_time
-            self.square['alpha'] = 255 
-
-        if self.square['state'] == 'hit':
-            elapsed_time = (current_time - self.square['start_time']) / 1000
-            if elapsed_time < 1:
-                alpha = max(0, int(255 * (1 - elapsed_time)))
-                sprite_with_alpha.fill((255, 255, 255, alpha), special_flags=pygame.BLEND_RGBA_MULT)
-                rotated_sprite = pygame.transform.rotate(sprite_with_alpha, angle)
-                screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + resized_sprite_width // 2, sprite_y + resized_sprite_height // 2)))
-            else:
-                self.square['state'] = 'normal'
-                self.square['alpha'] = 0
-
-        elif self.square['state'] == 'normal':
-            if 'alpha' not in self.square:
-                self.square['alpha'] = 0
-
-            sprite_with_alpha.fill((255, 255, 255, self.square['alpha']), special_flags=pygame.BLEND_RGBA_MULT)
-            rotated_sprite = pygame.transform.rotate(sprite_with_alpha, angle)
-            screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + resized_sprite_width // 2, sprite_y + resized_sprite_height // 2)))
+        if distance_to_center < 250:
+            if self.square['state'] == 'normal':
+                self.square['state'] = 'hit'
+                self.square['start_time'] = current_time
+            if self.square['state'] == 'hit':
+                elapsed_time = (current_time - self.square['start_time']) / 1000
+                if elapsed_time < 1:
+                    alpha = max(0, int(255 * (1 - elapsed_time)))
+                    square_color = (255, 0, 0, alpha)
+                    s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                    s.fill(square_color)
+                    screen.blit(s, (square_x, square_y))
+                else:
+                    self.square['state'] = 'normal'
+            elif self.square['state'] == 'normal':
+                pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
 
     def trigger_death_anim(self, current_time):
         self.square['state'] = 'death_anim'
@@ -91,20 +77,17 @@ class Square():
 
     def update_fading_squares(self, fading_squares):
         current_time = pygame.time.get_ticks()
-        center_x, center_y = screen_width // 2, screen_height // 2
 
         for square in fading_squares:
             elapsed_time = (current_time - square.square['fade']) / 1000
             square_x, square_y = square.square['position']
-            angle = 180 - math.degrees(math.atan2(center_y - (square_y + 20), center_x - (square_x + 20)))
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time / 1)))
-                
-                sprite_x = square_x + (square_size - self.resized_sprite.get_width()) // 2
-                sprite_y = square_y + (square_size - self.resized_sprite.get_height()) // 2       
-                self.resized_sprite.fill((255, 0, 0, alpha), special_flags=pygame.BLEND_RGBA_MULT)
-                rotated_sprite = pygame.transform.rotate(self.resized_sprite, angle)
-                screen.blit(rotated_sprite, rotated_sprite.get_rect(center=(sprite_x + self.resized_sprite.copy().get_width() // 2, sprite_y + self.resized_sprite.copy().get_height() // 2)))
+
+                square_color = (255, 255, 255, alpha)
+                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                s.fill(square_color)
+                screen.blit(s, (square_x, square_y))
             else:
                 fading_squares.remove(square)   
 
@@ -143,41 +126,35 @@ class Circle():
     def draw_circles(self, circles):
         new_circles = []
         for circle in circles:
-            # Извлечение координат и скорости круга
+
             circle_x, circle_y, dx, dy = circle
-            # Обновление позиции круга
+
             circle_x += dx
             circle_y += dy
-            # Проверка, выходит ли круг за границы экрана
+
             if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
-                continue  # Пропускаем этот круг
-            
-            # Вычисление угла поворота в сторону курсора
-            
-            angle = math.degrees(math.atan2(self.mouse_y - circle_y, self.mouse_x - circle_x)) - 90  # Вычитание 90, чтобы спрайт смотрел вверх
-            
-            # Поворот спрайта
-            rotated_sprite = pygame.transform.rotate(self.sprite, angle)
-            rotated_rect = rotated_sprite.get_rect(center=(int(circle_x), int(circle_y)))
-            
-            # Отрисовка спрайта
-            screen.blit(rotated_sprite, rotated_rect.topleft)
-            
-            # Добавляем круг в новый список
+                continue 
+
+            pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
+
             new_circles.append((circle_x, circle_y, dx, dy))
-        # Заменяем старый список новым
+
         return new_circles
 
+
 class Screen():
-    def render_points(self, points):
+    def render_info(self, points, level, remaining_enemies):
         points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
-        text_rect = points_text.get_rect(center=(screen_width // 2 + 130, 30))
+        text_rect = points_text.get_rect(center=(screen_width // 2 - 400, 30))
         screen.blit(points_text, text_rect)
 
-    def render_level(self, level):
         level_text = font.render(f'LEVEL:  {level} ', True, (255, 255, 255))
-        text_rect = level_text.get_rect(center=(screen_width // 2 - 130, 30))
-        screen.blit(level_text, text_rect)
+        text_rect = level_text.get_rect(center=(screen_width // 2 - 150, 30))
+        screen.blit(level_text, text_rect)  
+
+        r_enemies_text = font.render(f'{remaining_enemies} ENEMIES REMAIN', True, (255, 255, 255))
+        r_enemies_text_rect = r_enemies_text.get_rect(center=(screen_width // 2 + 200, 30))
+        screen.blit(r_enemies_text, r_enemies_text_rect)   
 
     def endscreen(self, result, curr_level, score):
         victory_screen = pygame.Surface((screen_width, screen_height))
@@ -188,8 +165,10 @@ class Screen():
 
         text = font.render(result, True, (255, 255, 255))     
         text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
-
+        
+        offset = 0
         if (result == "YOU LOST"):
+            offset = 150
             level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
         else:
             level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
@@ -199,15 +178,18 @@ class Screen():
         score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
         score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
 
-        next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-        next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
-        next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+        
+        if (result != 'YOU LOST'):
+            
+            next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
+            next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
+            next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
 
-        replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150, 300, 100)
+        replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150 - offset, 300, 100)
         replay_text = button_font.render("RESTART", True, (0, 0, 0))
         replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
-        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300, 300, 100)
+        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300 - offset, 300, 100)
         quit_text = button_font.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
@@ -227,7 +209,8 @@ class Screen():
             text.set_alpha(alpha)
             level_text.set_alpha(alpha)
             score_text.set_alpha(alpha)
-            next_level_text.set_alpha(alpha)
+            if (result != 'YOU LOST'):
+                next_level_text.set_alpha(alpha)
             replay_text.set_alpha(alpha)
             quit_text.set_alpha(alpha)
 
@@ -236,7 +219,7 @@ class Screen():
                     pygame.quit()
                     return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if next_level_button.collidepoint(event.pos):
+                    if result != 'YOU LOST' and next_level_button.collidepoint(event.pos):
                         game(level=curr_level + 1, points=score)
                     if replay_button.collidepoint(event.pos):
                         game(level=1, points=0)
@@ -247,9 +230,10 @@ class Screen():
             victory_screen.blit(text, text_rect)
             victory_screen.blit(level_text, level_rect)
             victory_screen.blit(score_text, score_rect)
-
-            pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
-            victory_screen.blit(next_level_text, next_level_text_rect)
+            
+            if (result != 'YOU LOST'):
+                pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
+                victory_screen.blit(next_level_text, next_level_text_rect)
 
             pygame.draw.rect(victory_screen, (255, 255, 255), replay_button)
             victory_screen.blit(replay_text, replay_text_rect)
@@ -418,6 +402,12 @@ def game(level, points):
     fading_squares = []
     n_enemies = level * 2
     speed = math.sqrt(level) / 2
+    beam_state = 'normal'
+    fade_start = None
+    transparent_start = None    
+    min_alpha = 10
+    max_alpha = 80
+
 
     enemy_sprite = T1enemy_image
     bullet = bullet_image
@@ -427,7 +417,6 @@ def game(level, points):
 
     running = True
     clock = pygame.time.Clock()
-    current_frame = 0
 
     while running:
         for event in pygame.event.get():
@@ -460,21 +449,48 @@ def game(level, points):
             (screen_width // 2, screen_height // 2)  # вершина в центре
         ]
 
-        pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
+        if random.randint(0, 100) == 0 and beam_state == 'normal':
+            beam_state = 'transparent'
+            transparent_start = current_time
 
-        pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)  
+        if beam_state == 'transparent':
+            elapsed_time = (current_time - transparent_start) / 1000
+            if elapsed_time < 0.2:
+                beam_color = (245, 238, 119, min_alpha)  # Fully transparent
+            else:
+                beam_state = 'normal'
+                beam_color = (245, 238, 119, max_alpha)  # Reset to fully opaque
+        else:
+            beam_color = (245, 238, 119, max_alpha)  # Fully opaque
+
+        #screen.fill((0, 0, 0))  # Clear screen with black
+
+        if beam_state == 'faded':
+            fade_elapsed_time = (current_time - fade_start) / 1000
+            if fade_elapsed_time < 0.2:
+                alpha = max(min_alpha, int(max_alpha * (1 - fade_elapsed_time)))
+                beam_fade_color = (245, 238, 119, alpha)
+                pygame.draw.polygon(beam_surface, beam_fade_color, beam_triangle)
+                pygame.draw.line(beam_surface, beam_fade_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
+            else:
+                beam_state = 'normal'
+                beam_color = (245, 238, 119, max_alpha)
+
+        pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
+        pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
+                
+        screen.blit(beam_surface, (0, 0))
 
         for sq in squares:
             sq.upd_sq_pos()
 
-        current_frame = (current_frame + 1) % frame_count
-        screen.blit(frames[current_frame], (0, 0))
+        screen.fill(blue_color)
         screen.blit(island_image, island_rect)
         screen.blit(beam_surface, (0, 0))
         screen.blit(lighthouse_image, lighthouse_rect)
 
         island_center = (island_rect.centerx, island_rect.centery)
-        island_radius = min(island_rect.width, island_rect.height) // 2 - 20
+        island_radius = min(island_rect.width, island_rect.height) // 2 - square_size // 2
         island_circle = (island_center, island_radius)
 
         if sq.check_loss(squares, island_circle):
@@ -497,9 +513,7 @@ def game(level, points):
 
         circles = Circle(bullet).draw_circles(circles)
 
-        Screen().render_points(points)
-
-        Screen().render_level(level)
+        Screen().render_info(points, level, len(squares))
 
         if (len(squares)==0):
             Screen().endscreen("LEVEL COMPLETED", level, points)
