@@ -7,15 +7,13 @@ from start import *
 
 
 class Square():
-    def __init__(self, sprite, speed) -> None:
+    def __init__(self, speed) -> None:
         self.square = {
             'position': self.gen_spawn_points(), 
             'state': 'normal', 
             'start_time': 0, 
             'fade': 0, 
             'alpha': 0}
-        self.sprite = sprite
-        self.resized_sprite = pygame.transform.scale(sprite, (sprite.get_width() // 4, sprite.get_height() // 4))
         self.speed = speed
 
     def gen_spawn_points(self):
@@ -47,7 +45,7 @@ class Square():
 
         self.square['position'] = (square_x, square_y)
 
-    def draw_square(self, current_time, beam_triangle):
+    def draw_square(self, current_time):
         square_x, square_y = self.square['position']
         distance_to_center = math.sqrt((square_x + square_size // 2 - screen_width // 2) ** 2 + (square_y + square_size // 2 - screen_height // 2) ** 2)  
 
@@ -105,7 +103,7 @@ class Square():
 
 
 class Circle():
-    def __init__(self, sprite) -> None:
+    def __init__(self) -> None:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         dx = mouse_x - (screen_width // 2)
         dy = mouse_y - (screen_height // 2)
@@ -119,7 +117,6 @@ class Circle():
         circle_y = screen_height // 2
 
         self.circle = (circle_x, circle_y, dx * speed, dy * speed)
-        self.sprite = pygame.transform.scale(sprite, (sprite.get_width() // 5, sprite.get_height() // 5))
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
@@ -273,6 +270,7 @@ class Screen():
             screen.blit(new_lh_image, new_lh_image_rect)
             screen.blit(r_arrow_image, r_arrow_rect)
             screen.blit(l_arrow_image, l_arrow_rect)
+              
             screen.blit(beam_surface, (0, 0))
             
             pygame.display.flip()
@@ -329,7 +327,7 @@ class Screen():
             pygame.display.flip()
 
 
-def get_points(dx, dy, end_x, end_y):
+def beam_corners(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
     perpendicular_dy = dx
 
@@ -340,8 +338,8 @@ def get_points(dx, dy, end_x, end_y):
         perpendicular_dy /= perpendicular_length
 
     # Умножаем нормализованный вектор на 100 пикселей
-    perpendicular_dx *= 100
-    perpendicular_dy *= 100
+    perpendicular_dx *= 150 # 150 200 250
+    perpendicular_dy *= 150
 
     # Вычисляем координаты вершины слева
     left_vertex_x = end_x + perpendicular_dx
@@ -358,8 +356,8 @@ def get_points(dx, dy, end_x, end_y):
         perpendicular_dy_right /= perpendicular_length_right
 
     # Умножаем нормализованный вектор на 100 пикселей
-    perpendicular_dx_right *= 100
-    perpendicular_dy_right *= 100
+    perpendicular_dx_right *= 150
+    perpendicular_dy_right *= 150
 
     # Вычисляем координаты вершины справа
     right_vertex_x = end_x + perpendicular_dx_right
@@ -393,7 +391,7 @@ def check_collision(circles, squares, fading_squares):
                 squares.remove(square) 
 
 def game(level, points):
-
+    
     if (level == 0):
         pygame.quit() # дописать хендлер выхода из игры - щас ошибка какая-то выползает при выходе: pygame.error: video system not initialized
 
@@ -403,34 +401,32 @@ def game(level, points):
     n_enemies = level * 2
     speed = math.sqrt(level) / 2
     beam_state = 'normal'
-    fade_start = None
-    transparent_start = None    
+    transparent_start = None
+    
     min_alpha = 10
     max_alpha = 80
 
-
-    enemy_sprite = T1enemy_image
-    bullet = bullet_image
-
     for _ in range(n_enemies):
-        squares.append(Square(enemy_sprite, speed))
+        squares.append(Square(speed))
 
     running = True
     clock = pygame.time.Clock()
 
     while running:
+        current_time = pygame.time.get_ticks()
+
         for event in pygame.event.get():
             if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                new_c = Circle(bullet)
+                new_c = Circle()
                 circles.append(new_c.circle)
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         dx = mouse_x - (screen_width // 2)
         dy = mouse_y - (screen_height // 2)
-        
+            
         length = math.sqrt(dx ** 2 + dy ** 2)
         if length > 0:
             dx /= length
@@ -440,8 +436,8 @@ def game(level, points):
         end_y = (screen_height // 2) + dy * beam_length
 
         beam_surface.fill((0, 0, 0, 0))
-        
-        left_x, left_y, right_x, right_y = get_points(dx, dy, end_x, end_y)
+            
+        left_x, left_y, right_x, right_y = beam_corners(dx, dy, end_x, end_y)
 
         beam_triangle = [
             (left_x, left_y),    # вершина слева
@@ -449,13 +445,13 @@ def game(level, points):
             (screen_width // 2, screen_height // 2)  # вершина в центре
         ]
 
-        if random.randint(0, 100) == 0 and beam_state == 'normal':
+        if random.randint(0, 130) == 0 and beam_state == 'normal':
             beam_state = 'transparent'
             transparent_start = current_time
-
+        
         if beam_state == 'transparent':
             elapsed_time = (current_time - transparent_start) / 1000
-            if elapsed_time < 0.2:
+            if  elapsed_time < 0.2:
                 beam_color = (245, 238, 119, min_alpha)  # Fully transparent
             else:
                 beam_state = 'normal'
@@ -463,22 +459,9 @@ def game(level, points):
         else:
             beam_color = (245, 238, 119, max_alpha)  # Fully opaque
 
-        #screen.fill((0, 0, 0))  # Clear screen with black
-
-        if beam_state == 'faded':
-            fade_elapsed_time = (current_time - fade_start) / 1000
-            if fade_elapsed_time < 0.2:
-                alpha = max(min_alpha, int(max_alpha * (1 - fade_elapsed_time)))
-                beam_fade_color = (245, 238, 119, alpha)
-                pygame.draw.polygon(beam_surface, beam_fade_color, beam_triangle)
-                pygame.draw.line(beam_surface, beam_fade_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
-            else:
-                beam_state = 'normal'
-                beam_color = (245, 238, 119, max_alpha)
-
         pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
         pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
-                
+                    
         screen.blit(beam_surface, (0, 0))
 
         for sq in squares:
@@ -496,12 +479,10 @@ def game(level, points):
         if sq.check_loss(squares, island_circle):
             Screen().endscreen("YOU LOST", level, points)
 
-        current_time = pygame.time.get_ticks()
-
         for sq in squares:
-            sq.draw_square(current_time, beam_triangle)
+            sq.draw_square(current_time)
 
-        Square(enemy_sprite, speed).update_fading_squares(fading_squares)
+        Square(speed).update_fading_squares(fading_squares)
 
         n_sq = len(squares)
 
@@ -511,7 +492,9 @@ def game(level, points):
         if len(squares) < n_sq:
             points+=1
 
-        circles = Circle(bullet).draw_circles(circles)
+        circles = Circle().draw_circles(circles)
+
+        screen.blit(bg_image, bg_rect)
 
         Screen().render_info(points, level, len(squares))
 
@@ -520,6 +503,7 @@ def game(level, points):
 
         pygame.display.flip()
         clock.tick(60)
+        #print(clock.get_fps())
 
 if __name__ == '__main__':
     Screen().startscreen()
