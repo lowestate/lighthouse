@@ -468,9 +468,16 @@ def game(level, points):
             sq.upd_sq_pos()
 
         screen.fill(blue_color)
+
+        
         screen.blit(island_image, island_rect)
-        screen.blit(beam_surface, (0, 0))
         screen.blit(lighthouse_image, lighthouse_rect)
+        
+        
+        
+        screen.blit(beam_surface, (0, 0))
+        
+        
 
         island_center = (island_rect.centerx, island_rect.centery)
         island_radius = min(island_rect.width, island_rect.height) // 2 - square_size // 2
@@ -494,8 +501,8 @@ def game(level, points):
 
         circles = Circle().draw_circles(circles)
 
-        screen.blit(bg_image, bg_rect)
-
+        screen.blit(background, (0, 0))
+        
         Screen().render_info(points, level, len(squares))
 
         if (len(squares)==0):

@@ -38,9 +38,12 @@ beam_state = 'normal'
 
 
 bg_image_path = os.path.join(os.path.dirname(__file__), 'graphics/bg/bg_isl.png')
-bg_image = pygame.image.load(bg_image_path)
+bg_image = pygame.image.load(bg_image_path).convert_alpha()
 bg_image = pygame.transform.scale(bg_image, (screen_width, screen_height))
 bg_rect = bg_image.get_rect()
+
+background = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+background.blit(bg_image, (0, 0))
 
 
 # right arrow
