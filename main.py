@@ -545,7 +545,8 @@ def game(level, points):
     
         Screen().render_info(points, level, len(squares))
 
-        if (len(squares)==0 and points != 0):
+        # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации серти врага, а не сразу же при его убийстве
+        if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
             Screen().endscreen("LEVEL COMPLETED", level, points)
                 
                 
