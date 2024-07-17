@@ -1,12 +1,16 @@
 import math
 import time
+import sys
 import pygame
 import random
 from consts import *
 from start import *
 
 
-class Square():
+pygame.init()
+
+
+class Square:
     def __init__(self, speed) -> None:
         self.square = {
             'position': self.gen_spawn_points(), 
@@ -47,9 +51,9 @@ class Square():
 
     def draw_square(self, current_time):
         square_x, square_y = self.square['position']
-        distance_to_center = math.sqrt((square_x + square_size // 2 - screen_width // 2) ** 2 + (square_y + square_size // 2 - screen_height // 2) ** 2)  
+        distance_to_center = math.sqrt((square_x + SQ_SIZE // 2 - screen_width // 2) ** 2 + (square_y + SQ_SIZE // 2 - screen_height // 2) ** 2)  
 
-        pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
+        pygame.draw.rect(screen, BLUE, pygame.Rect(square_x, square_y, SQ_SIZE, SQ_SIZE))
 
         if distance_to_center < 250:
             if self.square['state'] == 'normal':
@@ -60,13 +64,13 @@ class Square():
                 if elapsed_time < 1:
                     alpha = max(0, int(255 * (1 - elapsed_time)))
                     square_color = (255, 0, 0, alpha)
-                    s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                    s = pygame.Surface((SQ_SIZE, SQ_SIZE), pygame.SRCALPHA)
                     s.fill(square_color)
                     screen.blit(s, (square_x, square_y))
                 else:
                     self.square['state'] = 'normal'
             elif self.square['state'] == 'normal':
-                pygame.draw.rect(screen, blue_color, pygame.Rect(square_x, square_y, square_size, square_size))
+                pygame.draw.rect(screen, BLUE, pygame.Rect(square_x, square_y, SQ_SIZE, SQ_SIZE))
 
     def trigger_death_anim(self, current_time):
         self.square['state'] = 'death_anim'
@@ -83,7 +87,7 @@ class Square():
                 alpha = max(0, int(255 * (1 - elapsed_time / 1)))
 
                 square_color = (255, 255, 255, alpha)
-                s = pygame.Surface((square_size, square_size), pygame.SRCALPHA)
+                s = pygame.Surface((SQ_SIZE, SQ_SIZE), pygame.SRCALPHA)
                 s.fill(square_color)
                 screen.blit(s, (square_x, square_y))
             else:
@@ -93,16 +97,16 @@ class Square():
         island_center, island_radius = island_circle
         for square in squares:
             square_x, square_y = square.square['position']
-            square_center_x = square_x + square_size / 2
-            square_center_y = square_y + square_size / 2
+            square_center_x = square_x + SQ_SIZE / 2
+            square_center_y = square_y + SQ_SIZE / 2
 
             distance = math.sqrt((square_center_x - island_center[0]) ** 2 + (square_center_y - island_center[1]) ** 2)
-            if distance < island_radius + square_size / 2:
+            if distance < island_radius + SQ_SIZE / 2:
                 return True
         return False
 
 
-class Circle():
+class Circle:
     def __init__(self) -> None:
         mouse_x, mouse_y = pygame.mouse.get_pos()
         dx = mouse_x - (screen_width // 2)
@@ -116,7 +120,7 @@ class Circle():
         circle_x = screen_width // 2
         circle_y = screen_height // 2
 
-        self.circle = (circle_x, circle_y, dx * speed, dy * speed)
+        self.circle = (circle_x, circle_y, dx * CIRCLE_SPEED, dy * CIRCLE_SPEED)
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
@@ -129,17 +133,17 @@ class Circle():
             circle_x += dx
             circle_y += dy
 
-            if circle_x + circle_radius > screen_width or circle_x - circle_radius < 0 or circle_y + circle_radius > screen_height or circle_y - circle_radius < 0:
+            if circle_x + CIRCLE_RAD > screen_width or circle_x - CIRCLE_RAD < 0 or circle_y + CIRCLE_RAD > screen_height or circle_y - CIRCLE_RAD < 0:
                 continue 
 
-            pygame.draw.circle(screen, circle_color, (int(circle_x), int(circle_y)), circle_radius)
+            pygame.draw.circle(screen, CIRCLE_COLOR, (int(circle_x), int(circle_y)), CIRCLE_RAD)
 
             new_circles.append((circle_x, circle_y, dx, dy))
 
         return new_circles
 
 
-class Screen():
+class Screen:
     def render_info(self, points, level, remaining_enemies):
         points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
         text_rect = points_text.get_rect(center=(screen_width // 2 - 400, 30))
@@ -213,8 +217,7 @@ class Screen():
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if result != 'YOU LOST' and next_level_button.collidepoint(event.pos):
                         game(level=curr_level + 1, points=score)
@@ -255,7 +258,7 @@ class Screen():
         while running:
             for event in pygame.event.get():
                 if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
-                    pygame.quit()
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if new_island_image_rect.collidepoint(event.pos):
                         game(level=1, points=0)
@@ -264,7 +267,7 @@ class Screen():
                     if l_arrow_image.collidepoint(event.pos):
                         pass
                         
-            screen.fill(blue_color)
+            screen.fill(BLUE)
 
             screen.blit(island_image, island_rect)
             screen.blit(new_lh_image, new_lh_image_rect)
@@ -300,16 +303,15 @@ class Screen():
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    pygame.quit()
-                    return
+                    sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if play_button.collidepoint(event.pos):
                         game(level=1, points=0)
                     if level_button.collidepoint(event.pos):
                         self.level_screen()
                     if quit_button.collidepoint(event.pos):
-                        pygame.quit()
-
+                        sys.exit()
+                        
             start_screen.fill((0, 0, 0))
 
             start_screen.blit(logo, logo_rect)
@@ -325,6 +327,28 @@ class Screen():
 
             screen.blit(start_screen, (0, 0))
             pygame.display.flip()
+
+
+class Raindrop:
+    def __init__(self):
+        self.size = random.choices(RAINDROP_SIZES, RAINDROP_PROBABILITIES)[0]
+        self.x = random.randint(0, screen_width)
+        self.y = random.randint(0, screen_height)
+        self.start_time = time.time()
+        self.alpha = 255
+
+    def update(self):
+        elapsed_time = time.time() - self.start_time
+        if elapsed_time > 0.5:
+            self.alpha = max(0, 255 - int((elapsed_time - 0.5) * 510))
+        if self.alpha == 0:
+            return False
+        return True
+
+    def draw(self, surface):
+        s = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
+        s.fill((*RAIN_COLOR, self.alpha))
+        surface.blit(s, (self.x, self.y))
 
 
 def beam_corners(dx, dy, end_x, end_y):
@@ -391,26 +415,31 @@ def check_collision(circles, squares, fading_squares):
                 squares.remove(square) 
 
 def game(level, points):
-    
     if (level == 0):
-        pygame.quit() # дописать хендлер выхода из игры - щас ошибка какая-то выползает при выходе: pygame.error: video system not initialized
+        sys.exit()
 
     circles = []
+
     squares = []
+    SPAWN_ENEMY_EVENT = pygame.USEREVENT + 1
+    pygame.time.set_timer(SPAWN_ENEMY_EVENT, 500)
+    enemies_spawned = 0
     fading_squares = []
     n_enemies = level * 2
     speed = math.sqrt(level) / 2
+
     beam_state = 'normal'
     transparent_start = None
-    
     min_alpha = 10
     max_alpha = 80
-
-    for _ in range(n_enemies):
-        squares.append(Square(speed))
+    
+    raindrops = []
+    last_rain_time = 0
 
     running = True
     clock = pygame.time.Clock()
+
+    squares.append(Square(speed))
 
     while running:
         current_time = pygame.time.get_ticks()
@@ -421,6 +450,9 @@ def game(level, points):
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 new_c = Circle()
                 circles.append(new_c.circle)
+            elif event.type == SPAWN_ENEMY_EVENT and enemies_spawned < n_enemies - 1:
+                squares.append(Square(speed))
+                enemies_spawned += 1
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
@@ -432,8 +464,8 @@ def game(level, points):
             dx /= length
             dy /= length
 
-        end_x = (screen_width // 2) + dx * beam_length
-        end_y = (screen_height // 2) + dy * beam_length
+        end_x = (screen_width // 2) + dx * BEAM_LENGTH
+        end_y = (screen_height // 2) + dy * BEAM_LENGTH
 
         beam_surface.fill((0, 0, 0, 0))
             
@@ -467,23 +499,20 @@ def game(level, points):
         for sq in squares:
             sq.upd_sq_pos()
 
-        screen.fill(blue_color)
+        screen.fill(BLUE)
 
         
         screen.blit(island_image, island_rect)
         screen.blit(lighthouse_image, lighthouse_rect)
-        
-        
-        
         screen.blit(beam_surface, (0, 0))
-        
+        screen.blit(lh_top_image, lh_top_rect)
         
 
         island_center = (island_rect.centerx, island_rect.centery)
-        island_radius = min(island_rect.width, island_rect.height) // 2 - square_size // 2
+        island_radius = min(island_rect.width, island_rect.height) // 2 - SQ_SIZE // 2
         island_circle = (island_center, island_radius)
 
-        if sq.check_loss(squares, island_circle):
+        if Square(speed).check_loss(squares, island_circle):
             Screen().endscreen("YOU LOST", level, points)
 
         for sq in squares:
@@ -502,11 +531,24 @@ def game(level, points):
         circles = Circle().draw_circles(circles)
 
         screen.blit(background, (0, 0))
-        
+
+        # капли
+        current_time = time.time()
+        if current_time - last_rain_time >= 0.02:
+            raindrops.append(Raindrop())
+            last_rain_time = current_time
+
+        raindrops = [drop for drop in raindrops if drop.update()]
+        for drop in raindrops:
+            drop.draw(screen)
+
+    
         Screen().render_info(points, level, len(squares))
 
-        if (len(squares)==0):
+        if (len(squares)==0 and points != 0):
             Screen().endscreen("LEVEL COMPLETED", level, points)
+                
+                
 
         pygame.display.flip()
         clock.tick(60)

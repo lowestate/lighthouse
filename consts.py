@@ -1,22 +1,27 @@
 # фон #01080d
-blue_color = (1, 6, 7) 
+BLUE = (1, 6, 7) 
 
-# размер маяка
-lh_width = 130
-lh_height = 150
+# маяк
+LH_WIDTH = 130
+LH_HEIGHT = 150
 
-# размер острова
-isl_width = 300
-isl_height = 300
+# остров
+ISL_WIDTH = 300
+ISL_HEIGHT = 300
 
 # луч
-beam_color = (245, 238, 119, 80)
-beam_length = 1500
+BEAM_COLOR = (245, 238, 119, 80)
+BEAM_LENGTH = 1500
 
 # пуля
-circle_radius = 10
-circle_color = (255, 0, 0)  # Красный цвет
-speed = 10
+CIRCLE_RAD = 10
+CIRCLE_COLOR = (255, 0, 0)  # Красный цвет
+CIRCLE_SPEED = 10
 
 # враг
-square_size = 60
+SQ_SIZE = 60
+
+# дождь
+RAIN_COLOR = (16, 27, 43)
+RAINDROP_SIZES = [4, 8, 12, 16]
+RAINDROP_PROBABILITIES = [0.2, 0.25, 0.35, 0.2]
