@@ -14,26 +14,28 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREE
 pygame.display.set_caption("Lighthouse")
 
 
-lh_top_image_path = os.path.join(os.path.dirname(__file__), 'graphics/lh/lh_top.png')
+lh_top_image_path = os.path.join(os.path.dirname(__file__), 'graphics/bg/lh_top.png')
 lh_top_image = pygame.image.load(lh_top_image_path)
-lh_top_image = pygame.transform.scale(lh_top_image, (LH_WIDTH, LH_HEIGHT))
 lh_top_rect = lh_top_image.get_rect()
 lh_top_rect.center = (screen_width // 2, screen_height // 2)
+lh_top = pygame.Surface((lh_top_rect.width, lh_top_rect.height), pygame.SRCALPHA)
+lh_top.blit(lh_top_image, (0, 0))
 
 
-lighthouse_image_path = os.path.join(os.path.dirname(__file__), 'graphics/lh/lighthouse.png')
+lighthouse_image_path = os.path.join(os.path.dirname(__file__), 'graphics/bg/lh.png')
 lighthouse_image = pygame.image.load(lighthouse_image_path)
-lighthouse_image = pygame.transform.scale(lighthouse_image, (LH_WIDTH, LH_HEIGHT))
 lighthouse_rect = lighthouse_image.get_rect()
 lighthouse_rect.center = (screen_width // 2, screen_height // 2)
+lh = pygame.Surface((lighthouse_rect.width, lighthouse_rect.height), pygame.SRCALPHA)
+lh.blit(lighthouse_image, (0, 0))
 
 
-island_image_path = os.path.join(os.path.dirname(__file__), 'graphics/lh/island.png')
+island_image_path = os.path.join(os.path.dirname(__file__), 'graphics/bg/isl.png')
 island_image = pygame.image.load(island_image_path)
-island_image = pygame.transform.scale(island_image, (ISL_WIDTH, ISL_HEIGHT))
 island_rect = island_image.get_rect()
 island_rect.center = (screen_width // 2, screen_height // 2)
-
+isl = pygame.Surface((island_rect.width, island_rect.height), pygame.SRCALPHA)
+isl.blit(island_image, (0, 0))
 
 beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)  
 beam_state = 'normal'

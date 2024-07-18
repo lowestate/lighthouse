@@ -11,27 +11,32 @@ pygame.init()
 
 
 class Square:
-    def __init__(self, speed) -> None:
+    def __init__(self, speed, oth_squares_coords) -> None:
         self.square = {
-            'position': self.gen_spawn_points(), 
+            'position': self.gen_spawn_points(oth_squares_coords), 
             'state': 'normal', 
             'start_time': 0, 
             'fade': 0, 
             'alpha': 0}
         self.speed = speed
 
-    def gen_spawn_points(self):
+    def gen_spawn_points(self, oth_squares_coords):
         center_x = screen_width // 2
         center_y = screen_height // 2
-        radius = 400
+        radius = 800
         
         while True:
             x = random.randint(0, screen_width)
             y = random.randint(0, screen_height)
             distance_to_center = math.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
-            
+
             if distance_to_center > radius:
-                return (x, y)
+                if len(oth_squares_coords) == 0:
+                    return (x, y)
+                else:
+                    if all(math.sqrt((x - coord[0]) ** 2 + (y - coord[1]) ** 2) >= 100 for coord in oth_squares_coords):
+                        return (x, y)
+            
     
     def upd_sq_pos(self):
         square_x, square_y = self.square['position']
@@ -55,7 +60,7 @@ class Square:
 
         pygame.draw.rect(screen, BLUE, pygame.Rect(square_x, square_y, SQ_SIZE, SQ_SIZE))
 
-        if distance_to_center < 250:
+        if distance_to_center < 400:
             if self.square['state'] == 'normal':
                 self.square['state'] = 'hit'
                 self.square['start_time'] = current_time
@@ -134,8 +139,9 @@ class Circle:
             circle_y += dy
 
             if circle_x + CIRCLE_RAD > screen_width or circle_x - CIRCLE_RAD < 0 or circle_y + CIRCLE_RAD > screen_height or circle_y - CIRCLE_RAD < 0:
-                continue 
-
+                continue    
+            
+            pygame.draw.circle(screen, CIRCLE_OUTLINES_COLOR, (int(circle_x), int(circle_y)), CIRCLE_RAD+3)
             pygame.draw.circle(screen, CIRCLE_COLOR, (int(circle_x), int(circle_y)), CIRCLE_RAD)
 
             new_circles.append((circle_x, circle_y, dx, dy))
@@ -421,8 +427,9 @@ def game(level, points):
     circles = []
 
     squares = []
+    oth_sqs_coords = []
     SPAWN_ENEMY_EVENT = pygame.USEREVENT + 1
-    pygame.time.set_timer(SPAWN_ENEMY_EVENT, 500)
+    pygame.time.set_timer(SPAWN_ENEMY_EVENT, 1000)
     enemies_spawned = 0
     fading_squares = []
     n_enemies = level * 2
@@ -439,7 +446,8 @@ def game(level, points):
     running = True
     clock = pygame.time.Clock()
 
-    squares.append(Square(speed))
+    squares.append(Square(speed, oth_sqs_coords))
+    oth_sqs_coords.append(squares[0].square['position'])
 
     while running:
         current_time = pygame.time.get_ticks()
@@ -451,7 +459,8 @@ def game(level, points):
                 new_c = Circle()
                 circles.append(new_c.circle)
             elif event.type == SPAWN_ENEMY_EVENT and enemies_spawned < n_enemies - 1:
-                squares.append(Square(speed))
+                squares.append(Square(speed, oth_sqs_coords))
+                oth_sqs_coords.append(squares[len(squares) - 1].square['position'])
                 enemies_spawned += 1
 
         mouse_x, mouse_y = pygame.mouse.get_pos()
@@ -501,24 +510,24 @@ def game(level, points):
 
         screen.fill(BLUE)
 
-        
-        screen.blit(island_image, island_rect)
-        screen.blit(lighthouse_image, lighthouse_rect)
+        screen.blit(isl, (0, 0))
+        screen.blit(lh, (0, 0))
         screen.blit(beam_surface, (0, 0))
-        screen.blit(lh_top_image, lh_top_rect)
+        screen.blit(lh_top, (0, 0))
         
 
         island_center = (island_rect.centerx, island_rect.centery)
-        island_radius = min(island_rect.width, island_rect.height) // 2 - SQ_SIZE // 2
+        island_radius = min(island_rect.width, island_rect.height) // 4 - SQ_SIZE
+        print(island_radius)
         island_circle = (island_center, island_radius)
 
-        if Square(speed).check_loss(squares, island_circle):
+        if Square(speed, oth_sqs_coords).check_loss(squares, island_circle):
             Screen().endscreen("YOU LOST", level, points)
 
         for sq in squares:
             sq.draw_square(current_time)
 
-        Square(speed).update_fading_squares(fading_squares)
+        Square(speed, oth_sqs_coords).update_fading_squares(fading_squares)
 
         n_sq = len(squares)
 
@@ -545,12 +554,10 @@ def game(level, points):
     
         Screen().render_info(points, level, len(squares))
 
-        # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации серти врага, а не сразу же при его убийстве
+        # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
             Screen().endscreen("LEVEL COMPLETED", level, points)
                 
-                
-
         pygame.display.flip()
         clock.tick(60)
         #print(clock.get_fps())
