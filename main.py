@@ -3,11 +3,9 @@ import time
 import sys
 import pygame
 import random
+import json
 from consts import *
 from start import *
-
-
-pygame.init()
 
 
 class Square:
@@ -80,7 +78,6 @@ class Square:
     def trigger_death_anim(self, current_time):
         self.square['state'] = 'death_anim'
         self.square['fade'] = current_time
-        self.square['alpha'] = 255
 
     def update_fading_squares(self, fading_squares):
         current_time = pygame.time.get_ticks()
@@ -90,7 +87,6 @@ class Square:
             square_x, square_y = square.square['position']
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time / 1)))
-
                 square_color = (255, 255, 255, alpha)
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE), pygame.SRCALPHA)
                 s.fill(square_color)
@@ -151,17 +147,20 @@ class Circle:
 
 class Screen:
     def render_info(self, points, level, remaining_enemies):
-        points_text = font.render(f'SCORE:  {points} ', True, (255, 255, 255))
-        text_rect = points_text.get_rect(center=(screen_width // 2 - 400, 30))
-        screen.blit(points_text, text_rect)
 
-        level_text = font.render(f'LEVEL:  {level} ', True, (255, 255, 255))
-        text_rect = level_text.get_rect(center=(screen_width // 2 - 150, 30))
-        screen.blit(level_text, text_rect)  
-
-        r_enemies_text = font.render(f'{remaining_enemies} ENEMIES REMAIN', True, (255, 255, 255))
-        r_enemies_text_rect = r_enemies_text.get_rect(center=(screen_width // 2 + 200, 30))
-        screen.blit(r_enemies_text, r_enemies_text_rect)   
+        text_to_blit = { # [value, offset]
+            'SCORE:  ': [points, 400],
+            'LEVEL:  ': [level, 150], 
+            'ENEMIES REMAIN:  ':  [remaining_enemies, -200]
+        }
+        
+        for key in text_to_blit: 
+            points_text = font.render(f"{key}{text_to_blit[key][0]}", True, (255, 255, 255))
+            text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 30))
+            transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
+            transparent_rect.fill((0, 0, 0, 0))
+            screen.blit(transparent_rect, text_rect.topleft)
+            screen.blit(points_text, text_rect.topleft)
 
     def endscreen(self, result, curr_level, score):
         victory_screen = pygame.Surface((screen_width, screen_height))
@@ -187,7 +186,6 @@ class Screen:
 
         
         if (result != 'YOU LOST'):
-            
             next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
             next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
             next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
@@ -212,14 +210,11 @@ class Screen:
             else:
                 alpha = 255
 
-            victory_screen.set_alpha(alpha)
-            text.set_alpha(alpha)
-            level_text.set_alpha(alpha)
-            score_text.set_alpha(alpha)
+            l = [victory_screen, text, level_text, score_text, replay_text, quit_text]
+            [elem.set_alpha(alpha) for elem in l]
+
             if (result != 'YOU LOST'):
                 next_level_text.set_alpha(alpha)
-            replay_text.set_alpha(alpha)
-            quit_text.set_alpha(alpha)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -233,9 +228,13 @@ class Screen:
                         game(level=0, points=0)
 
             victory_screen.fill((0, 0, 0))
-            victory_screen.blit(text, text_rect)
-            victory_screen.blit(level_text, level_rect)
-            victory_screen.blit(score_text, score_rect)
+
+            to_blit = [
+                [text,text_rect], 
+                [level_text, level_rect], 
+                [score_text, score_rect]
+            ]
+            [victory_screen.blit(o[0], o[1]) for o in to_blit]
             
             if (result != 'YOU LOST'):
                 pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
@@ -252,11 +251,13 @@ class Screen:
             clock.tick(60)
 
     def level_screen(self):
-        new_island_image = pygame.transform.scale(island_image, (island_image.get_width() * 1.3, island_image.get_height() * 1.3))
+        isl_img = objs['isl']['img']
+        lh_img = objs['lh']['img']
+        new_island_image = pygame.transform.scale(isl_img, (isl_img.get_width() * 1.3, isl_img.get_height() * 1.3))
         new_island_image_rect = new_island_image.get_rect()
         new_island_image_rect.center = (screen_width // 2, screen_height // 2)
 
-        new_lh_image = pygame.transform.scale(lighthouse_image, (lighthouse_image.get_width() * 1.3, lighthouse_image.get_height() * 1.3))
+        new_lh_image = pygame.transform.scale(lh_img, (lh_img.get_width() * 1.3, lh_img.get_height() * 1.3))
         new_lh_image_rect = new_lh_image.get_rect()
         new_lh_image_rect.center = (screen_width // 2, screen_height // 2)
 
@@ -268,17 +269,11 @@ class Screen:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if new_island_image_rect.collidepoint(event.pos):
                         game(level=1, points=0)
-                    if r_arrow_image.collidepoint(event.pos):
-                        pass
-                    if l_arrow_image.collidepoint(event.pos):
-                        pass
                         
             screen.fill(BLUE)
 
-            screen.blit(island_image, island_rect)
+            screen.blit(isl_img, objs['isl']['rect'])
             screen.blit(new_lh_image, new_lh_image_rect)
-            screen.blit(r_arrow_image, r_arrow_rect)
-            screen.blit(l_arrow_image, l_arrow_rect)
               
             screen.blit(beam_surface, (0, 0))
             
@@ -292,17 +287,13 @@ class Screen:
         button_font = pygame.font.Font(None, 60)
 
         logo = logo_font.render('LIGHTHOUSE', True, (255, 255, 255))     
-        logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))
+        logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))      
 
         play_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2, 400, 100)
         play_text = button_font.render("ENDLESS MODE", True, (0, 0, 0))
         play_text_rect = play_text.get_rect(center=play_button.center)
 
-        level_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 150, 400, 100)
-        level_text = button_font.render("CHOOSE A LEVEL", True, (0, 0, 0))
-        level_text_rect = level_text.get_rect(center=level_button.center)
-
-        quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 300, 400, 100)
+        quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 150, 400, 100)
         quit_text = button_font.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
@@ -313,8 +304,6 @@ class Screen:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if play_button.collidepoint(event.pos):
                         game(level=1, points=0)
-                    if level_button.collidepoint(event.pos):
-                        self.level_screen()
                     if quit_button.collidepoint(event.pos):
                         sys.exit()
                         
@@ -324,9 +313,6 @@ class Screen:
 
             pygame.draw.rect(start_screen, (255, 255, 255), play_button)
             start_screen.blit(play_text, play_text_rect)
-
-            pygame.draw.rect(start_screen, (255, 255, 255), level_button)
-            start_screen.blit(level_text, level_text_rect)
 
             pygame.draw.rect(start_screen, (255, 255, 255), quit_button)
             start_screen.blit(quit_text, quit_text_rect)
@@ -410,21 +396,37 @@ def point_inside_triangle(x, y, triangle):
     # то точка находится внутри треугольника
     return main_triangle_area == triangle1_area + triangle2_area + triangle3_area
 
-def check_collision(circles, squares, fading_squares):
+def check_collision(circles, squares, fading_squares, stats):
     for circle in circles:
         circle_x, circle_y, dx, dy = circle
         for square in squares:
             square_x, square_y = square.square['position']
-            if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):        
+            if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):     
+                stats['total_sqs_killed'] += 1
+                save_stats(stats)
                 square.trigger_death_anim(pygame.time.get_ticks())
                 fading_squares.append(square)
                 squares.remove(square) 
+
+def load_stats(filename='stats.json'):
+    try:
+        with open(filename, 'r') as f:
+            stats = json.load(f)
+    except FileNotFoundError:
+        stats = {'total_sqs_killed': 0}
+    return stats
+
+def save_stats(stats, filename='stats.json'):
+    with open(filename, 'w') as f:
+        json.dump(stats, f, indent=4)  
 
 def game(level, points):
     if (level == 0):
         sys.exit()
 
     circles = []
+    last_circle_spawn_time = 0
+    spawn_delay = 1200 # 1.2 сек
 
     squares = []
     oth_sqs_coords = []
@@ -449,6 +451,8 @@ def game(level, points):
     squares.append(Square(speed, oth_sqs_coords))
     oth_sqs_coords.append(squares[0].square['position'])
 
+    stats = load_stats()
+
     while running:
         current_time = pygame.time.get_ticks()
 
@@ -456,8 +460,10 @@ def game(level, points):
             if event.type == pygame.KEYDOWN and (event.key == pygame.K_ESCAPE or running == False):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                new_c = Circle()
-                circles.append(new_c.circle)
+                if current_time - last_circle_spawn_time >= spawn_delay:
+                    new_c = Circle()
+                    circles.append(new_c.circle)
+                    last_circle_spawn_time = current_time
             elif event.type == SPAWN_ENEMY_EVENT and enemies_spawned < n_enemies - 1:
                 squares.append(Square(speed, oth_sqs_coords))
                 oth_sqs_coords.append(squares[len(squares) - 1].square['position'])
@@ -493,45 +499,49 @@ def game(level, points):
         if beam_state == 'transparent':
             elapsed_time = (current_time - transparent_start) / 1000
             if  elapsed_time < 0.2:
-                beam_color = (245, 238, 119, min_alpha)  # Fully transparent
+                beam_color = (245, 238, 119, min_alpha)
             else:
                 beam_state = 'normal'
-                beam_color = (245, 238, 119, max_alpha)  # Reset to fully opaque
+                beam_color = (245, 238, 119, max_alpha)
         else:
-            beam_color = (245, 238, 119, max_alpha)  # Fully opaque
+            beam_color = (245, 238, 119, max_alpha)
 
         pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
         pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
                     
         screen.blit(beam_surface, (0, 0))
 
-        for sq in squares:
-            sq.upd_sq_pos()
+        [sq.upd_sq_pos() for sq in squares]
 
         screen.fill(BLUE)
 
-        screen.blit(isl, (0, 0))
-        screen.blit(lh, (0, 0))
-        screen.blit(beam_surface, (0, 0))
-        screen.blit(lh_top, (0, 0))
+        objs_to_blit = [
+            objs['isl']['sf'],
+            objs['lh']['sf'],
+            beam_surface,
+            objs['lh_top']['sf']
+        ]
+        for o in objs_to_blit:
+            if o is not beam_surface:
+                offset = 60
+            else:
+                offset = 0
+            screen.blit(o, (0, offset))
         
-
-        island_center = (island_rect.centerx, island_rect.centery)
-        island_radius = min(island_rect.width, island_rect.height) // 4 - SQ_SIZE
-        print(island_radius)
+        island_center = (objs['isl']['rect'].centerx, objs['isl']['rect'].centery)
+        island_radius = min(objs['isl']['rect'].width, objs['isl']['rect'].height) // 4 - SQ_SIZE
         island_circle = (island_center, island_radius)
 
         if Square(speed, oth_sqs_coords).check_loss(squares, island_circle):
             Screen().endscreen("YOU LOST", level, points)
 
-        for sq in squares:
-            sq.draw_square(current_time)
+        [sq.draw_square(current_time) for sq in squares]
 
         Square(speed, oth_sqs_coords).update_fading_squares(fading_squares)
 
         n_sq = len(squares)
 
-        check_collision(circles=circles, squares=squares, fading_squares=fading_squares)
+        check_collision(circles=circles, squares=squares, fading_squares=fading_squares, stats=stats)
 
         # если круг сбил квадрат то квадрат удаляется из массива => добавляем поинт если после проверки на столкновение квадратов оказалось меньше чем до проверки
         if len(squares) < n_sq:
@@ -539,7 +549,7 @@ def game(level, points):
 
         circles = Circle().draw_circles(circles)
 
-        screen.blit(background, (0, 0))
+        screen.blit(objs['bg_isl']['sf'], (0, 0))
 
         # капли
         current_time = time.time()
@@ -548,15 +558,14 @@ def game(level, points):
             last_rain_time = current_time
 
         raindrops = [drop for drop in raindrops if drop.update()]
-        for drop in raindrops:
-            drop.draw(screen)
-
+        [drop.draw(screen) for drop in raindrops]          
     
         Screen().render_info(points, level, len(squares))
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
             Screen().endscreen("LEVEL COMPLETED", level, points)
+            save_stats()
                 
         pygame.display.flip()
         clock.tick(60)
