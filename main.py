@@ -516,17 +516,18 @@ def game(level, points):
         screen.fill(BLUE)
 
         objs_to_blit = [
-            objs['isl']['sf'],
-            objs['lh']['sf'],
-            beam_surface,
-            objs['lh_top']['sf']
+            'isl',
+            'lh',
+            'lh_top'
         ]
-        for o in objs_to_blit:
-            if o is not beam_surface:
-                offset = 60
-            else:
-                offset = 0
-            screen.blit(o, (0, offset))
+
+        for key in objs_to_blit:
+            obj = objs[key]
+            blit_x = (screen_width - obj['rect'].width) // 2
+            blit_y = (screen_height - obj['rect'].height) // 2
+            if key == 'lh_top':
+                screen.blit(beam_surface, (0,0))
+            screen.blit(obj['sf'], (blit_x, blit_y))
         
         island_center = (objs['isl']['rect'].centerx, objs['isl']['rect'].centery)
         island_radius = min(objs['isl']['rect'].width, objs['isl']['rect'].height) // 4 - SQ_SIZE
