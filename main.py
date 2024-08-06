@@ -4,6 +4,7 @@ import sys
 import pygame
 import random
 import json
+import numpy as np
 from consts import *
 from start import *
 
@@ -32,10 +33,9 @@ class Square:
                 if len(oth_squares_coords) == 0:
                     return (x, y)
                 else:
-                    if all(math.sqrt((x - coord[0]) ** 2 + (y - coord[1]) ** 2) >= 100 for coord in oth_squares_coords):
+                    if all(math.sqrt((x - coord[0]) ** 2 + (y - coord[1]) ** 2) >= 150 for coord in oth_squares_coords):
                         return (x, y)
-            
-    
+             
     def upd_sq_pos(self):
         square_x, square_y = self.square['position']
 
@@ -343,6 +343,24 @@ class Raindrop:
         surface.blit(s, (self.x, self.y))
 
 
+class Boss:
+    def __init__(self) -> None:
+        # Инициализация свойств для всех элементов tentacles
+        tentacle_props = []
+        for key in ["lb", "lm", "lt", "rb", "rm", "rt"]:
+            tentacle_props.append(objs[key])
+
+        self.tentacles = []
+        for tentacle_sf in tentacle_props:
+            self.tentacles.append({
+                'hp': 60,
+                'sf': tentacle_sf,
+                'appear_start_time': 0,
+                'death_start_time': 0,
+            })       
+
+
+
 def beam_corners(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
     perpendicular_dy = dx
@@ -441,9 +459,16 @@ def game(level, points):
     transparent_start = None
     min_alpha = 10
     max_alpha = 80
+    max_odd = 120
     
     raindrops = []
     last_rain_time = 0
+
+    boss = Boss()
+    boss_preview = False
+    scr_alpha = 255
+    start_time = 0
+    objs['preview']['sf'].set_alpha(0)
 
     running = True
     clock = pygame.time.Clock()
@@ -492,30 +517,41 @@ def game(level, points):
             (screen_width // 2, screen_height // 2)  # вершина в центре
         ]
 
-        if random.randint(0, 130) == 0 and beam_state == 'normal':
+        if random.randint(0, max_odd) == 0 and beam_state == 'normal':
             beam_state = 'transparent'
             transparent_start = current_time
+
+        if boss_preview:
+            min_alpha = 0
         
         if beam_state == 'transparent':
             elapsed_time = (current_time - transparent_start) / 1000
-            if  elapsed_time < 0.2:
+            if elapsed_time < 0.2:
                 beam_color = (245, 238, 119, min_alpha)
+                if boss_preview:
+                    if max_alpha - 1.5 > 0: 
+                        max_alpha -= 1.5 
+                    else: 
+                        max_alpha = 0
+                    max_odd = 40
             else:
                 beam_state = 'normal'
-                beam_color = (245, 238, 119, max_alpha)
+                beam_color = (245, 238, 119, max_alpha)    
         else:
             beam_color = (245, 238, 119, max_alpha)
 
-        pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
-        pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
+        if max_alpha != 0:
+            pygame.draw.polygon(beam_surface, beam_color, beam_triangle)
+            pygame.draw.line(beam_surface, beam_color, (screen_width // 2, screen_height // 2), (end_x, end_y), 5)
                     
-        screen.blit(beam_surface, (0, 0))
+            screen.blit(beam_surface, (0, 0))
 
         [sq.upd_sq_pos() for sq in squares]
 
         screen.fill(BLUE)
 
         objs_to_blit = [
+            'preview',
             'isl',
             'lh',
             'lh_top'
@@ -527,6 +563,8 @@ def game(level, points):
             blit_y = (screen_height - obj['rect'].height) // 2
             if key == 'lh_top':
                 screen.blit(beam_surface, (0,0))
+            if key == 'bg_isl' and obj['sf'].get_alpha() == 0:
+                continue
             screen.blit(obj['sf'], (blit_x, blit_y))
         
         island_center = (objs['isl']['rect'].centerx, objs['isl']['rect'].centery)
@@ -550,13 +588,17 @@ def game(level, points):
 
         circles = Circle().draw_circles(circles)
 
-        screen.blit(objs['bg_isl']['sf'], (0, 0))
+        if boss_preview and objs['bg_isl']['sf'].get_alpha() > 0:
+            objs['bg_isl']['sf'].set_alpha(objs['bg_isl']['sf'].get_alpha() - 1.5)        
+        
+        if objs['bg_isl']['sf'].get_alpha() > 0:
+            screen.blit(objs['bg_isl']['sf'], (0, 0))
 
         # капли
-        current_time = time.time()
-        if current_time - last_rain_time >= 0.02:
+        t_current_time = time.time()
+        if t_current_time - last_rain_time >= 0.02:
             raindrops.append(Raindrop())
-            last_rain_time = current_time
+            last_rain_time = t_current_time
 
         raindrops = [drop for drop in raindrops if drop.update()]
         [drop.draw(screen) for drop in raindrops]          
@@ -565,8 +607,18 @@ def game(level, points):
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
-            Screen().endscreen("LEVEL COMPLETED", level, points)
-            save_stats()
+            if (level==1):
+                boss_preview = True
+                if max_alpha == 0:    
+                    if start_time == 0:
+                        start_time = pygame.time.get_ticks() 
+                    elif pygame.time.get_ticks() - start_time > 2000:
+                        scr_alpha = max(scr_alpha - 3, 0)
+                        objs['preview']['sf'].set_alpha(scr_alpha)
+            else:
+                Screen().endscreen("LEVEL COMPLETED", level, points)
+                save_stats(stats)
+
                 
         pygame.display.flip()
         clock.tick(60)
