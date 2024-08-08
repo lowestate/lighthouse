@@ -319,6 +319,18 @@ class Screen:
 
             screen.blit(start_screen, (0, 0))
             pygame.display.flip()
+    
+    def debug_info(tentacles):
+        positions = ['LT', 'LM', 'LB', 'RT', 'RM', 'RB']  # Позиции меток
+        for i, t in enumerate(tentacles):
+            if 'hp' in t:
+                label = positions[i % len(positions)]  # Определение метки
+                points_text = font.render(f"{label}: {t['hp']}, {t['sprite']['rect'].x}, {t['sprite']['rect'].y}", True, (255, 255, 255))
+                text_rect = points_text.get_rect(topright=(screen_width - 10, 20 + i * 30))
+                transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
+                transparent_rect.fill((0, 0, 0, 0))
+                screen.blit(transparent_rect, text_rect.topleft)
+                screen.blit(points_text, text_rect.topleft)
 
 
 class Raindrop:
@@ -347,19 +359,69 @@ class Boss:
     def __init__(self) -> None:
         # Инициализация свойств для всех элементов tentacles
         tentacle_props = []
-        for key in ["lb", "lm", "lt", "rb", "rm", "rt"]:
+        for key in ["lt", "lm", "lb", "rt", "rm", "rb"]:
             tentacle_props.append(objs[key])
 
         self.tentacles = []
         for tentacle_sf in tentacle_props:
             self.tentacles.append({
-                'hp': 60,
-                'sf': tentacle_sf,
+                'hp': 10,
+                'sprite': tentacle_sf,
                 'appear_start_time': 0,
                 'death_start_time': 0,
-            })       
+                'last_hit_time': 0,
+            })
+        
+        self.pair_lt_rb = [0, 5]
+        self.pair_lm_rm = [1, 4]
+        self.pair_lb_rt = [2, 3]
+
+    def bossfight(self, stage, moved_l, moved_r, circles):
+        if not moved_l:
+            for i in range(3):
+                self.tentacles[i]['sprite']['rect'].x -= self.tentacles[i]['sprite']['rect'].width // 2
+        if not moved_r:
+            for i in range(3, 6):
+                self.tentacles[i]['sprite']['rect'].x += self.tentacles[i]['sprite']['rect'].width // 2
+
+        if stage == 1 and moved_r and moved_l:
+            for t_n in self.pair_lt_rb:
+                for circle in circles:
+                    circle_x, circle_y, dx, dy = circle
+
+                    if pygame.time.get_ticks() - self.tentacles[t_n]['last_hit_time'] > 1000:
+                        collision_lt, self.tentacles[t_n]['last_hit_time'] = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[t_n]['sprite'])
+                        if collision_lt  and self.tentacles[t_n]['hp'] > 0:
+                            self.tentacles[t_n]['hp'] -= 1
+                    
+                if self.tentacles[t_n]['hp'] > 0:
+                    if t_n == 0:
+                        self.tentacles[t_n]['sprite']['rect'].x += 1
+                    elif t_n == 5:
+                        self.tentacles[t_n]['sprite']['rect'].x -= 1
+                else: 
+                    change_sf_color(self.tentacles[t_n]['sprite']['sf'], (255, 255, 255, 255))
+                    if self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15 > 0:
+                        self.tentacles[t_n]['sprite']['sf'].set_alpha(self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15)
+                    else: 
+                        self.tentacles[t_n]['sprite']['sf'].set_alpha(0)
+                if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
+                    screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
 
 
+def change_sf_color(surface, color):
+    # Создание маски для непрозрачных частей
+    mask = pygame.mask.from_surface(surface)
+
+    # Создание нового слоя для покраски
+    color_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+    color_surface.fill(color)
+
+    # Накладываем цвет только на непрозрачные пиксели
+    for y in range(surface.get_height()):
+        for x in range(surface.get_width()):
+            if mask.get_at((x, y)) != 0:  # Проверка на непрозрачность
+                surface.set_at((x, y), color_surface.get_at((x, y)))
 
 def beam_corners(dx, dy, end_x, end_y):
     perpendicular_dx = -dy
@@ -426,6 +488,30 @@ def check_collision(circles, squares, fading_squares, stats):
                 fading_squares.append(square)
                 squares.remove(square) 
 
+def check_collision_circle_surface(circle_pos, circle_radius, sprite):
+    surface = sprite['sf']
+    surface_rect = sprite['rect']
+    collision_time = 0
+
+    # Создание маски для поверхности
+    mask = pygame.mask.from_surface(surface)
+
+    # Создание маски для круга
+    circle_surface = pygame.Surface((circle_radius * 2, circle_radius * 2), pygame.SRCALPHA)
+    pygame.draw.circle(circle_surface, (255, 255, 255), (circle_radius, circle_radius), circle_radius)
+    circle_mask = pygame.mask.from_surface(circle_surface)
+
+    # Позиция круга относительно поверхности
+    offset = (circle_pos[0] - surface_rect.left - circle_radius, circle_pos[1] - surface_rect.top - circle_radius)
+
+    # Проверка коллизии масок
+    collision_point = mask.overlap(circle_mask, offset)
+
+    if collision_point is not None:
+        collision_time = pygame.time.get_ticks()
+
+    return collision_point is not None, collision_time
+
 def load_stats(filename='stats.json'):
     try:
         with open(filename, 'r') as f:
@@ -465,10 +551,14 @@ def game(level, points):
     last_rain_time = 0
 
     boss = Boss()
-    boss_preview = False
+    boss_preview = None
     scr_alpha = 255
     start_time = 0
     objs['preview']['sf'].set_alpha(0)
+    boss_killed = False
+    stage = 1
+    moved_l = False
+    moved_r = False
 
     running = True
     clock = pygame.time.Clock()
@@ -533,7 +623,7 @@ def game(level, points):
                         max_alpha -= 1.5 
                     else: 
                         max_alpha = 0
-                    max_odd = 40
+                    max_odd = 30
             else:
                 beam_state = 'normal'
                 beam_color = (245, 238, 119, max_alpha)    
@@ -563,7 +653,7 @@ def game(level, points):
             blit_y = (screen_height - obj['rect'].height) // 2
             if key == 'lh_top':
                 screen.blit(beam_surface, (0,0))
-            if key == 'bg_isl' and obj['sf'].get_alpha() == 0:
+            if (key == 'bg_isl' and obj['sf'].get_alpha() == 0) or (key == 'preview' and boss_preview == None):
                 continue
             screen.blit(obj['sf'], (blit_x, blit_y))
         
@@ -607,7 +697,7 @@ def game(level, points):
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
-            if (level==1):
+            if (level==1 and boss_preview != False):
                 boss_preview = True
                 if max_alpha == 0:    
                     if start_time == 0:
@@ -615,14 +705,23 @@ def game(level, points):
                     elif pygame.time.get_ticks() - start_time > 2000:
                         scr_alpha = max(scr_alpha - 3, 0)
                         objs['preview']['sf'].set_alpha(scr_alpha)
+                        if scr_alpha == 0:
+                            boss_preview = False
+                            objs['bg_isl']['sf'].set_alpha(255)
+                            max_alpha = 80
+                            min_alpha = 20
+            elif not boss_killed:
+                Screen.debug_info(boss.tentacles)
+                boss.bossfight(stage, moved_l, moved_r, circles)
+                moved_r = True
+                moved_l = True
             else:
                 Screen().endscreen("LEVEL COMPLETED", level, points)
                 save_stats(stats)
 
-                
         pygame.display.flip()
         clock.tick(60)
-        #print(clock.get_fps())
+        print(clock.get_fps())
 
 if __name__ == '__main__':
     Screen().startscreen()

@@ -20,7 +20,7 @@ screen_height = int(unscaled_scr_height * scaled)
 screen_width = int(unscaled_scr_width * scaled)
 #print(f"scalar:{scaled}\nraw:{unscaled_scr_width}x{unscaled_scr_height}\nadjusted:{screen_width}x{screen_height}")
 
-screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
+screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN, pygame.DOUBLEBUF)
 pygame.display.set_caption("Lighthouse")
 
 paths = [
@@ -67,3 +67,5 @@ for key, path in zip(objs.keys(), paths):
     objs[key]['sf'].blit(objs[key]['img'], (0, 0))
 
 beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+
+screen_sf = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
