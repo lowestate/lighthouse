@@ -58,7 +58,7 @@ for key, path in zip(objs.keys(), paths):
     img_path = os.path.join(os.path.dirname(__file__), path)
     objs[key]['img'] = pygame.image.load(img_path).convert_alpha()
 
-    if key == "bg_isl":
+    if key == "bg_isl" or key == "preview":
         objs[key]['img'] = pygame.transform.scale(objs[key]['img'], (screen_width, screen_height))
 
     objs[key]['rect'] = objs[key]['img'].get_rect()       
