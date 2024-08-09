@@ -171,24 +171,27 @@ class Screen:
 
         text = font.render(result, True, (255, 255, 255))     
         text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
+
+        if result == 'YOU LOST' or result == 'KRAKEN REACHED YOU':
+            lost = True
+        else:
+            lost = False
         
         offset = 0
-        if (result == "YOU LOST"):
+        if lost:
             offset = 150
             level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
         else:
             level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
+            next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
+            next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
+            next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
 
         level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
 
         score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
         score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
-
-        
-        if (result != 'YOU LOST'):
-            next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-            next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
-            next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
+          
 
         replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150 - offset, 300, 100)
         replay_text = button_font.render("RESTART", True, (0, 0, 0))
@@ -213,14 +216,14 @@ class Screen:
             l = [victory_screen, text, level_text, score_text, replay_text, quit_text]
             [elem.set_alpha(alpha) for elem in l]
 
-            if (result != 'YOU LOST'):
+            if not lost:
                 next_level_text.set_alpha(alpha)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    if result != 'YOU LOST' and next_level_button.collidepoint(event.pos):
+                    if not lost and next_level_button.collidepoint(event.pos):
                         game(level=curr_level + 1, points=score)
                     if replay_button.collidepoint(event.pos):
                         game(level=1, points=0)
@@ -236,7 +239,7 @@ class Screen:
             ]
             [victory_screen.blit(o[0], o[1]) for o in to_blit]
             
-            if (result != 'YOU LOST'):
+            if not lost:
                 pygame.draw.rect(victory_screen, (255, 255, 255), next_level_button)
                 victory_screen.blit(next_level_text, next_level_text_rect)
 
@@ -365,7 +368,7 @@ class Boss:
         self.tentacles = []
         for tentacle_sf in tentacle_props:
             self.tentacles.append({
-                'hp': 10,
+                'hp': 4,
                 'sprite': tentacle_sf,
                 'appear_start_time': 0,
                 'death_start_time': 0,
@@ -376,16 +379,23 @@ class Boss:
         self.pair_lm_rm = [1, 4]
         self.pair_lb_rt = [2, 3]
 
-    def bossfight(self, stage, moved_l, moved_r, circles):
+    def bossfight(self, stage, moved_l, moved_r, circles, level, score):
         if not moved_l:
             for i in range(3):
-                self.tentacles[i]['sprite']['rect'].x -= self.tentacles[i]['sprite']['rect'].width // 2
+                self.tentacles[i]['sprite']['rect'].x -= self.tentacles[i]['sprite']['rect'].width
         if not moved_r:
             for i in range(3, 6):
-                self.tentacles[i]['sprite']['rect'].x += self.tentacles[i]['sprite']['rect'].width // 2
+                self.tentacles[i]['sprite']['rect'].x += screen_width
 
         if stage == 1 and moved_r and moved_l:
-            for t_n in self.pair_lt_rb:
+            if self.tentacles[0]['hp'] != 0 or self.tentacles[5]['hp'] != 0 or self.tentacles[0]['sprite']['sf'].get_alpha() != 0 or self.tentacles[5]['sprite']['sf'].get_alpha() != 0:
+                pair_to_blit = self.pair_lt_rb
+            elif self.tentacles[1]['hp'] != 0 or self.tentacles[4]['hp'] != 0 or self.tentacles[1]['sprite']['sf'].get_alpha() != 0 or self.tentacles[4]['sprite']['sf'].get_alpha() != 0:
+                pair_to_blit = self.pair_lm_rm
+            else:
+                pair_to_blit = self.pair_lb_rt
+            
+            for t_n in pair_to_blit:
                 for circle in circles:
                     circle_x, circle_y, dx, dy = circle
 
@@ -393,18 +403,25 @@ class Boss:
                         collision_lt, self.tentacles[t_n]['last_hit_time'] = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[t_n]['sprite'])
                         if collision_lt  and self.tentacles[t_n]['hp'] > 0:
                             self.tentacles[t_n]['hp'] -= 1
-                    
+                
                 if self.tentacles[t_n]['hp'] > 0:
-                    if t_n == 0:
-                        self.tentacles[t_n]['sprite']['rect'].x += 1
-                    elif t_n == 5:
-                        self.tentacles[t_n]['sprite']['rect'].x -= 1
-                else: 
+                    if t_n < 3:
+                        if self.tentacles[t_n]['sprite']['rect'].x != 0:
+                            self.tentacles[t_n]['sprite']['rect'].x += 1
+                        else:
+                            Screen.endscreen('KRAKEN REACHED YOU', level, score)
+                    elif t_n > 2:
+                        if self.tentacles[t_n]['sprite']['rect'].x != screen_width - self.tentacles[t_n]['sprite']['rect'].width:
+                            self.tentacles[t_n]['sprite']['rect'].x -= 1
+                        else:
+                            Screen().endscreen('KRAKEN REACHED YOU', level, score)
+                elif self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0: 
                     change_sf_color(self.tentacles[t_n]['sprite']['sf'], (255, 255, 255, 255))
                     if self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15 > 0:
                         self.tentacles[t_n]['sprite']['sf'].set_alpha(self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15)
                     else: 
                         self.tentacles[t_n]['sprite']['sf'].set_alpha(0)
+
                 if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
                     screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
 
@@ -712,7 +729,7 @@ def game(level, points):
                             min_alpha = 20
             elif not boss_killed:
                 Screen.debug_info(boss.tentacles)
-                boss.bossfight(stage, moved_l, moved_r, circles)
+                boss.bossfight(stage, moved_l, moved_r, circles, level, points)
                 moved_r = True
                 moved_l = True
             else:
@@ -721,7 +738,6 @@ def game(level, points):
 
         pygame.display.flip()
         clock.tick(60)
-        print(clock.get_fps())
 
 if __name__ == '__main__':
     Screen().startscreen()

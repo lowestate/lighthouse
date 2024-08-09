@@ -62,7 +62,26 @@ for key, path in zip(objs.keys(), paths):
         objs[key]['img'] = pygame.transform.scale(objs[key]['img'], (screen_width, screen_height))
 
     objs[key]['rect'] = objs[key]['img'].get_rect()       
-    objs[key]['rect'].center = (screen_width // 2, screen_height // 2)
+
+    if key == 'lh_top' or key == 'lh' or key == 'isl' or key == 'preview' or key == 'bg_isl':
+        objs[key]['rect'].center = (screen_width // 2, screen_height // 2)
+    else: # starting pos
+        objs[key]['rect'].x = 0
+        objs[key]['rect'].y = 0
+
+        # no X offset needed because it is stated in bossfight func
+
+        if key[1] == 't': # no Y offset for top right tentacle
+            if key[0] == 'l':
+                objs[key]['rect'].y += screen_height * 0.0644
+        elif key[1] == 'm': # Y offset for middle tentacles
+            objs[key]['rect'].y += screen_height * 0.268
+        else: # Y offset for bottom tentacles
+            if key[0] == 'l': # bottom left
+                objs[key]['rect'].y = screen_height - objs[key]['rect'].height
+            else: # bottom right
+                objs[key]['rect'].y += screen_height * 0.6287
+        
     objs[key]['sf'] = pygame.Surface((objs[key]['rect'].width, objs[key]['rect'].height), pygame.SRCALPHA)
     objs[key]['sf'].blit(objs[key]['img'], (0, 0))
 
