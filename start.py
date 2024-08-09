@@ -1,6 +1,7 @@
 import pygame
 import os
 import ctypes
+import json
 from consts import *
 
 pygame.init()
@@ -88,3 +89,17 @@ for key, path in zip(objs.keys(), paths):
 beam_surface = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
 
 screen_sf = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+
+def load_stats(filename='stats.json'):
+    try:
+        with open(filename, 'r') as f:
+            stats = json.load(f)
+    except FileNotFoundError:
+        stats = {'total_sqs_killed': 0}
+    return stats
+
+def save_stats(stats, filename='stats.json'):
+    with open(filename, 'w') as f:
+        json.dump(stats, f, indent=4) 
+
+STATS = load_stats()
