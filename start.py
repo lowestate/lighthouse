@@ -5,7 +5,7 @@ from consts import *
 
 pygame.init()
 pygame.font.init()
-font = pygame.font.Font('graphics/font/font.ttf', 70)
+font = pygame.font.Font('graphics/font/super_mario.ttf', 42)
 
 info = pygame.display.Info()
 unscaled_scr_width = info.current_w
@@ -24,8 +24,8 @@ screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREE
 pygame.display.set_caption("Lighthouse")
 
 paths = [
-    'graphics/bg/lh_top.png',
-    'graphics/bg/lh.png',
+    'graphics/lh/lh_top.png',
+    'graphics/lh/lh.png',
     'graphics/bg/isl.png',
     'graphics/bg/bg_isl.png',
     'graphics/boss/left_bottom.png',

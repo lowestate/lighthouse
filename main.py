@@ -4,7 +4,6 @@ import sys
 import pygame
 import random
 import json
-import numpy as np
 from consts import *
 from start import *
 
@@ -87,7 +86,7 @@ class Square:
             square_x, square_y = square.square['position']
             if elapsed_time < 1:
                 alpha = max(0, int(255 * (1 - elapsed_time / 1)))
-                square_color = (255, 255, 255, alpha)
+                square_color = (137, 154, 197, alpha)
                 s = pygame.Surface((SQ_SIZE, SQ_SIZE), pygame.SRCALPHA)
                 s.fill(square_color)
                 screen.blit(s, (square_x, square_y))
@@ -149,14 +148,14 @@ class Screen:
     def render_info(self, points, level, remaining_enemies):
 
         text_to_blit = { # [value, offset]
-            'SCORE:  ': [points, 400],
-            'LEVEL:  ': [level, 150], 
-            'ENEMIES REMAIN:  ':  [remaining_enemies, -200]
+            'SCORE: ': [points, 425],
+            'LEVEL: ': [level, 125], 
+            'ENEMIES REMAIN: ':  [remaining_enemies, -290]
         }
         
         for key in text_to_blit: 
             points_text = font.render(f"{key}{text_to_blit[key][0]}", True, (255, 255, 255))
-            text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 30))
+            text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 40))
             transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
             transparent_rect.fill((0, 0, 0, 0))
             screen.blit(transparent_rect, text_rect.topleft)
@@ -401,7 +400,8 @@ class Boss:
 
                     if pygame.time.get_ticks() - self.tentacles[t_n]['last_hit_time'] > 1000:
                         collision_lt, self.tentacles[t_n]['last_hit_time'] = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[t_n]['sprite'])
-                        if collision_lt  and self.tentacles[t_n]['hp'] > 0:
+                        if collision_lt and self.tentacles[t_n]['hp'] > 0:
+                            circles.remove(circle)
                             self.tentacles[t_n]['hp'] -= 1
                 
                 if self.tentacles[t_n]['hp'] > 0:
@@ -416,15 +416,38 @@ class Boss:
                         else:
                             Screen().endscreen('KRAKEN REACHED YOU', level, score)
                 elif self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0: 
-                    change_sf_color(self.tentacles[t_n]['sprite']['sf'], (255, 255, 255, 255))
-                    if self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15 > 0:
-                        self.tentacles[t_n]['sprite']['sf'].set_alpha(self.tentacles[t_n]['sprite']['sf'].get_alpha() - 15)
+                    #change_sf_color(self.tentacles[t_n]['sprite']['sf'], (36, 42, 55, 255))
+                    if self.tentacles[t_n]['sprite']['sf'].get_alpha() - 5 > 0:
+                        self.tentacles[t_n]['sprite']['sf'].set_alpha(self.tentacles[t_n]['sprite']['sf'].get_alpha() - 5)
                     else: 
                         self.tentacles[t_n]['sprite']['sf'].set_alpha(0)
 
                 if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
                     screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
+        
+        self.healthbar()
+    
+    def healthbar(self):
+        total_hp = sum(t['hp'] for t in self.tentacles)
+        max_hp = len(self.tentacles) * 4
 
+        bar_width = screen_width / 1.5
+        bar_height = screen_width / 128
+        offset_y = screen_height / 20
+        bar_x = (screen_width - bar_width) / 2
+        bar_y = screen_height - offset_y - bar_height
+
+        # оставшееся хп
+        current_bar_width = (total_hp / max_hp) * bar_width
+
+        font = pygame.font.Font(None, 48)  # Шрифт и размер текста
+        text = font.render("KRAKEN", True, (255, 255, 255))  # Текст и его цвет
+        text_rect = text.get_rect(center=(screen_width / 2, bar_y - screen_height / 48))  # Центрирование текста
+        screen.blit(text, text_rect)  # Отрисовка текста на экране
+        
+        pygame.draw.rect(screen, HEALTHBAR_COLOR, (bar_x, bar_y, bar_width, bar_height))
+        pygame.draw.rect(screen, HEALTH_COLOR, (bar_x, bar_y, current_bar_width, bar_height))
+        
 
 def change_sf_color(surface, color):
     # Создание маски для непрозрачных частей
@@ -504,6 +527,7 @@ def check_collision(circles, squares, fading_squares, stats):
                 square.trigger_death_anim(pygame.time.get_ticks())
                 fading_squares.append(square)
                 squares.remove(square) 
+                circles.remove(circle)
 
 def check_collision_circle_surface(circle_pos, circle_radius, sprite):
     surface = sprite['sf']
@@ -728,7 +752,7 @@ def game(level, points):
                             max_alpha = 80
                             min_alpha = 20
             elif not boss_killed:
-                Screen.debug_info(boss.tentacles)
+                #Screen.debug_info(boss.tentacles)
                 boss.bossfight(stage, moved_l, moved_r, circles, level, points)
                 moved_r = True
                 moved_l = True
