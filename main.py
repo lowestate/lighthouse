@@ -403,7 +403,10 @@ class Boss:
                         if collision_lt and self.tentacles[t_n]['hp'] > 0:
                             circles.remove(circle)
                             self.tentacles[t_n]['hp'] -= 1
-                
+                            if t_n < 3: # left tentacles are knokbacked to the left, reversed for the right ones
+                                self.tentacles[t_n]['sprite']['rect'].x -= 10
+                            else:
+                                self.tentacles[t_n]['sprite']['rect'].x += 10
                 if self.tentacles[t_n]['hp'] > 0:
                     if t_n < 3:
                         if self.tentacles[t_n]['sprite']['rect'].x != 0:
@@ -431,23 +434,40 @@ class Boss:
         total_hp = sum(t['hp'] for t in self.tentacles)
         max_hp = len(self.tentacles) * 4
 
-        bar_width = screen_width / 1.5
+        # Фиксированный отступ от краев экрана
+        margin = screen_width / 50
+
+        # Ширина healthbar с учетом отступов
+        bar_width = screen_width / 2
         bar_height = screen_width / 128
         offset_y = screen_height / 20
+        bar_center_x = screen_width / 2
+        bar_center_y = screen_height - offset_y - bar_height / 2
         bar_x = (screen_width - bar_width) / 2
         bar_y = screen_height - offset_y - bar_height
 
-        # оставшееся хп
+        # Ширина healthbar в зависимости от оставшегося hp
         current_bar_width = (total_hp / max_hp) * bar_width
 
         font = pygame.font.Font(None, 48)  # Шрифт и размер текста
         text = font.render("KRAKEN", True, (255, 255, 255))  # Текст и его цвет
-        text_rect = text.get_rect(center=(screen_width / 2, bar_y - screen_height / 48))  # Центрирование текста
+        text_rect = text.get_rect(center=(screen_width / 2, bar_center_y - screen_height / 48))  # Центрирование текста
         screen.blit(text, text_rect)  # Отрисовка текста на экране
-        
+
+        # Рисуем основной healthbar
         pygame.draw.rect(screen, HEALTHBAR_COLOR, (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(screen, HEALTH_COLOR, (bar_x, bar_y, current_bar_width, bar_height))
-        
+        # Рисуем текущий healthbar
+        draw_rect_centered(screen, HEALTH_COLOR, (bar_center_x, bar_center_y), current_bar_width, bar_height)
+
+
+def draw_rect_centered(surface, color, center, width, height):
+    # Вычисляем верхний левый угол из центра
+    top_left_x = center[0] - width / 2
+    top_left_y = center[1] - height / 2
+    
+    # Рисуем прямоугольник с вычисленными координатами
+    pygame.draw.rect(surface, color, (top_left_x, top_left_y, width, height))
+       
 
 def change_sf_color(surface, color):
     # Создание маски для непрозрачных частей
@@ -586,7 +606,7 @@ def game(level, points):
     transparent_start = None
     min_alpha = 10
     max_alpha = 80
-    max_odd = 120
+    max_odd = 100
     
     raindrops = []
     last_rain_time = 0
@@ -664,7 +684,7 @@ def game(level, points):
                         max_alpha -= 1.5 
                     else: 
                         max_alpha = 0
-                    max_odd = 30
+                    max_odd = max(max_odd-5, 0)
             else:
                 beam_state = 'normal'
                 beam_color = (245, 238, 119, max_alpha)    
@@ -751,6 +771,7 @@ def game(level, points):
                             objs['bg_isl']['sf'].set_alpha(255)
                             max_alpha = 80
                             min_alpha = 20
+                            max_odd = 100
             elif not boss_killed:
                 #Screen.debug_info(boss.tentacles)
                 boss.bossfight(stage, moved_l, moved_r, circles, level, points)
