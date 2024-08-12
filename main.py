@@ -369,10 +369,12 @@ class Boss:
         for key in ["lt", "lm", "lb", "rt", "rm", "rb"]:
             tentacle_props.append(objs[key])
 
+        self.t_hp = 2
+
         self.tentacles = []
         for tentacle_sf in tentacle_props:
             self.tentacles.append({
-                'hp': 4,
+                'hp': self.t_hp,
                 'sprite': tentacle_sf,
                 'appear_start_time': 0,
                 'death_start_time': 0,
@@ -380,24 +382,24 @@ class Boss:
             })
         
         stage1_order = random.sample(range(6), 6)
-        print(stage1_order)
+        self.stage2_order = random.sample(range(6), 6)
         self.pair_lt_rb = [stage1_order[0], stage1_order[1]]
         self.pair_lm_rm = [stage1_order[2], stage1_order[3]]
         self.pair_lb_rt = [stage1_order[4], stage1_order[5]]
         
 
-    def bossfight(self, stage, moved_l, moved_r, circles, level, score):
-        if not moved_l:
-            for i in range(3):
-                self.tentacles[i]['sprite']['rect'].x -= self.tentacles[i]['sprite']['rect'].width
-        if not moved_r:
-            for i in range(3, 6):
-                self.tentacles[i]['sprite']['rect'].x += screen_width
-
-        if moved_l and moved_r:
+    def bossfight(self, moved_l_r, circles, level, score, stage):
+        print(stage, moved_l_r)
+        if not moved_l_r:
+            for i in range(6):
+                self.tentacles[i]['sprite']['sf'].set_alpha(254)
+                if i < 3:
+                    self.tentacles[i]['sprite']['rect'].x = 0 - self.tentacles[i]['sprite']['rect'].width
+                else:
+                    self.tentacles[i]['sprite']['rect'].x = screen_width                
+        else:
+            self.t_hp = 3
             if stage == 1:
-                t_hp = 4
-
                 if sum(self.tentacles[t_n]['hp'] for t_n in self.pair_lt_rb) != 0 or sum(self.tentacles[t_n]['sprite']['sf'].get_alpha() for t_n in self.pair_lt_rb) != 0:
                     pair_to_blit = self.pair_lt_rb
                 elif sum(self.tentacles[t_n]['hp'] for t_n in self.pair_lm_rm) != 0 or sum(self.tentacles[t_n]['sprite']['sf'].get_alpha() for t_n in self.pair_lm_rm) != 0:
@@ -423,7 +425,7 @@ class Boss:
                             if self.tentacles[t_n]['sprite']['rect'].x != 0:
                                 self.tentacles[t_n]['sprite']['rect'].x += 1
                             else:
-                                Screen.endscreen('KRAKEN REACHED YOU', level, score)
+                                Screen().endscreen('KRAKEN REACHED YOU', level, score)
                         elif t_n > 2:
                             if self.tentacles[t_n]['sprite']['rect'].x != screen_width - self.tentacles[t_n]['sprite']['rect'].width:
                                 self.tentacles[t_n]['sprite']['rect'].x -= 1
@@ -439,13 +441,58 @@ class Boss:
                     if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
                         screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
             elif stage == 2:
-                t_hp = 2
-                for t in self.tentacles:
-                    if t['hp'] <= 2:
-                        t['hp']+=0.01
-        
-            self.healthbar(t_hp)
+                if sum(t['hp'] for t in self.tentacles) != len(self.tentacles) * self.t_hp:
+                    self.return_to_startpos()
+                else:
+                    for t_n in self.stage2_order:
+                        if self.tentacles[t_n]['hp'] > 0:
+                            for circle in circles:
+                                circle_x, circle_y, dx, dy = circle
+
+                                if pygame.time.get_ticks() - self.tentacles[t_n]['last_hit_time'] > 1000:
+                                    collision_lt, self.tentacles[t_n]['last_hit_time'] = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[t_n]['sprite'])
+                                    if collision_lt and self.tentacles[t_n]['hp'] > 0:
+                                        circles.remove(circle)
+                                        self.tentacles[t_n]['hp'] -= STATS['bullet_damage']
+                                        if t_n < 3: # left tentacles are knokbacked to the left, reversed for the right ones
+                                            self.tentacles[t_n]['sprite']['rect'].x -= STATS['bullet_knockback']
+                                        else:
+                                            self.tentacles[t_n]['sprite']['rect'].x += STATS['bullet_knockback']
+                            if t_n < 3:
+                                if self.tentacles[t_n]['sprite']['rect'].x != 0:
+                                    self.tentacles[t_n]['sprite']['rect'].x += 5
+                                else:
+                                    Screen().endscreen('KRAKEN REACHED YOU', level, score)
+                            elif t_n > 2:
+                                if self.tentacles[t_n]['sprite']['rect'].x != screen_width - self.tentacles[t_n]['sprite']['rect'].width:
+                                    self.tentacles[t_n]['sprite']['rect'].x -= 5
+                                else:
+                                    Screen().endscreen('KRAKEN REACHED YOU', level, score)
+                        elif self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0: 
+                            #change_sf_color(self.tentacles[t_n]['sprite']['sf'], (36, 42, 55, 255))
+                            if self.tentacles[t_n]['sprite']['sf'].get_alpha() - 5 > 0:
+                                self.tentacles[t_n]['sprite']['sf'].set_alpha(self.tentacles[t_n]['sprite']['sf'].get_alpha() - 5)
+                            else: 
+                                self.tentacles[t_n]['sprite']['sf'].set_alpha(0)
+
+                        if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
+                            screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
+                            break              
+
+            self.healthbar(self.t_hp)
     
+    def return_to_startpos(self):
+        for t_n in range(len(self.tentacles)):
+            if self.tentacles[t_n]['hp'] <= 2:
+                self.tentacles[t_n]['hp']+=0.01
+
+            '''if t_n < 3:
+                self.tentacles[t_n]['sprite']['rect'].x -= self.tentacles[t_n]['sprite']['rect'].width
+            else:
+                self.tentacles[t_n]['sprite']['rect'].x += screen_width'''
+            
+            self.tentacles[t_n]['sprite']['sf'].set_alpha(254)
+               
     def healthbar(self, t_hp):
         total_hp = sum(t['hp'] for t in self.tentacles)
         max_hp = len(self.tentacles) * t_hp
@@ -468,8 +515,7 @@ class Boss:
         screen.blit(text, text_rect)
 
         pygame.draw.rect(screen, HEALTHBAR_COLOR, (bar_x, bar_y, bar_width, bar_height))
-        pygame.draw.rect(screen, HEALTH_COLOR, (top_left_x, top_left_y, current_bar_width, bar_height))
-   
+        pygame.draw.rect(screen, HEALTH_COLOR, (top_left_x, top_left_y, current_bar_width, bar_height)) 
        
 
 def change_sf_color(surface, color):
@@ -609,8 +655,7 @@ def game(level, points):
     objs['preview']['sf'].set_alpha(0)
     boss_killed = False
     stage = 1
-    moved_l = False
-    moved_r = False
+    moved_l_r = False
 
     running = True
     clock = pygame.time.Clock()
@@ -747,27 +792,29 @@ def game(level, points):
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
-            if (level==1 and boss_preview != False):
-                boss_preview = True
-                if max_alpha == 0:    
-                    if start_time == 0:
-                        start_time = pygame.time.get_ticks() 
-                    elif pygame.time.get_ticks() - start_time > 2000:
-                        scr_alpha = max(scr_alpha - 3, 0)
-                        objs['preview']['sf'].set_alpha(scr_alpha)
-                        if scr_alpha == 0:
-                            boss_preview = False
-                            objs['bg_isl']['sf'].set_alpha(255)
-                            max_alpha = 80
-                            min_alpha = 20
-                            max_odd = 100
-            elif not boss_killed:
-                #Screen.debug_info(boss.tentacles, stage)
-                boss.bossfight(stage, moved_l, moved_r, circles, level, points)
-                moved_r = True
-                moved_l = True
-                if sum(t['hp'] for t in boss.tentacles) == 0 and sum(t['sprite']['sf'].get_alpha() for t in boss.tentacles) == 0:
-                    stage = 2
+            if (level==1):
+                if boss_preview != False:
+                    boss_preview = True
+                    if max_alpha == 0:    
+                        if start_time == 0:
+                            start_time = pygame.time.get_ticks() 
+                        elif pygame.time.get_ticks() - start_time > 2000:
+                            scr_alpha = max(scr_alpha - 3, 0)
+                            objs['preview']['sf'].set_alpha(scr_alpha)
+                            if scr_alpha == 0:
+                                boss_preview = False
+                                objs['bg_isl']['sf'].set_alpha(255)
+                                max_alpha = 80
+                                min_alpha = 20
+                                max_odd = 100
+                elif not boss_killed:
+                    Screen.debug_info(boss.tentacles, stage)
+                    boss.bossfight(moved_l_r, circles, level, points, stage)
+                    moved_l_r = True
+                    if stage == 1 and sum(t['hp'] for t in boss.tentacles) == 0 and sum(t['sprite']['sf'].get_alpha() for t in boss.tentacles) == 0:
+                        moved_l_r = False
+                        stage = 2
+                        
             else:
                 Screen().endscreen("LEVEL COMPLETED", level, points)
                 save_stats(STATS)
