@@ -35,7 +35,8 @@ paths = [
     'graphics/boss/right_bottom.png',
     'graphics/boss/right_middle.png',
     'graphics/boss/right_top.png',
-    'graphics/boss/preview.png'
+    'graphics/boss/preview.png',
+    'graphics/boss/fin.png'
 ]
 
 sprite_properties: dict = {"img", "rect", "sf"} # image; rect of this image; surface with this image
@@ -53,6 +54,7 @@ objs = {
     "rm": dict.fromkeys(sprite_properties),
     "rt": dict.fromkeys(sprite_properties),
     "preview": dict.fromkeys(sprite_properties),
+    'fin':  dict.fromkeys(sprite_properties),
 }
 
 for key, path in zip(objs.keys(), paths):
@@ -64,7 +66,7 @@ for key, path in zip(objs.keys(), paths):
 
     objs[key]['rect'] = objs[key]['img'].get_rect()       
 
-    if key == 'lh_top' or key == 'lh' or key == 'isl' or key == 'preview' or key == 'bg_isl':
+    if key == 'lh_top' or key == 'lh' or key == 'isl' or key == 'preview' or key == 'bg_isl' or key == 'fin':
         objs[key]['rect'].center = (screen_width // 2, screen_height // 2)
     else: # starting pos
         objs[key]['rect'].x = 0
