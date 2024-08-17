@@ -14,26 +14,28 @@ class Square:
             'state': 'normal', 
             'start_time': 0, 
             'fade': 0, 
-            'alpha': 0}
+            'alpha': 0
+        }
         self.speed = speed
 
     def gen_spawn_points(self, oth_squares_coords):
         center_x = screen_width // 2
         center_y = screen_height // 2
-        radius = 800
+        a = screen_width / 2.8  # Полуось по ширине (полуширина эллипса)
+        b = screen_height / 2.8  # Полуось по высоте (полувысота эллипса)
         
         while True:
             x = random.randint(0, screen_width)
             y = random.randint(0, screen_height)
-            distance_to_center = math.sqrt((x - center_x) ** 2 + (y - center_y) ** 2)
+            distance_to_ellipse = ((x - center_x) ** 2) / (a ** 2) + ((y - center_y) ** 2) / (b ** 2)
 
-            if distance_to_center > radius:
+            if distance_to_ellipse > 1:  # Если точка находится за пределами эллипса
                 if len(oth_squares_coords) == 0:
                     return (x, y)
                 else:
                     if all(math.sqrt((x - coord[0]) ** 2 + (y - coord[1]) ** 2) >= 150 for coord in oth_squares_coords):
                         return (x, y)
-             
+        
     def upd_sq_pos(self):
         square_x, square_y = self.square['position']
 
@@ -64,7 +66,7 @@ class Square:
                 elapsed_time = (current_time - self.square['start_time']) / 1000
                 if elapsed_time < 1:
                     alpha = max(0, int(255 * (1 - elapsed_time)))
-                    square_color = (255, 0, 0, alpha)
+                    square_color = (89, 118, 179, alpha)
                     s = pygame.Surface((SQ_SIZE, SQ_SIZE), pygame.SRCALPHA)
                     s.fill(square_color)
                     screen.blit(s, (square_x, square_y))
@@ -101,6 +103,7 @@ class Square:
 
             distance = math.sqrt((square_center_x - island_center[0]) ** 2 + (square_center_y - island_center[1]) ** 2)
             if distance < island_radius + SQ_SIZE / 2:
+                squares.remove(square)
                 return True
         return False
 
@@ -119,7 +122,7 @@ class Circle:
         circle_x = screen_width // 2
         circle_y = screen_height // 2
 
-        self.circle = (circle_x, circle_y, dx * CIRCLE_SPEED, dy * CIRCLE_SPEED)
+        self.circle = (circle_x, circle_y, dx * STATS['bullet_speed'], dy * STATS['bullet_speed'])
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
@@ -343,6 +346,7 @@ class Screen:
 class Raindrop:
     def __init__(self):
         self.size = random.choices(RAINDROP_SIZES, RAINDROP_PROBABILITIES)[0]
+        self.color = random.choices(RAINDROP_COLORS, RAINDROP_PROBABILITIES)[0]
         self.x = random.randint(0, screen_width)
         self.y = random.randint(0, screen_height)
         self.start_time = time.time()
@@ -358,7 +362,7 @@ class Raindrop:
 
     def draw(self, surface):
         s = pygame.Surface((self.size, self.size), pygame.SRCALPHA)
-        s.fill((*RAIN_COLOR, self.alpha))
+        s.fill((*self.color, self.alpha))
         surface.blit(s, (self.x, self.y))
 
 
@@ -394,15 +398,14 @@ class Boss:
         self.show_hb = True
         self.show_text = False
         
-    def bossfight(self, stage, moved_r_l, circles, level, score):
-        if not moved_r_l:
+    def bossfight(self, stage, moved_x, circles, level, score):
+        if not moved_x:
             for i in range(6):
                 if i < 3:
                     self.tentacles[i]['sprite']['rect'].x -= self.tentacles[i]['sprite']['rect'].width
                 else:
                     self.tentacles[i]['sprite']['rect'].x += screen_width
-
-        if moved_r_l:
+        else:
             if stage == 1:
                 if sum(self.tentacles[t_n]['hp'] for t_n in self.pair_lt_rb) != 0 or sum(self.tentacles[t_n]['sprite']['sf'].get_alpha() for t_n in self.pair_lt_rb) != 0:
                     pair_to_blit = self.pair_lt_rb
@@ -448,16 +451,7 @@ class Boss:
                         # adjust x coord to start pos
                         self.tentacles[t_n]['sprite']['rect'].x = 0 - self.tentacles[t_n]['sprite']['rect'].width if t_n < 3 else screen_width
 
-                        if t_n == 0: # top left
-                            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.0644
-                        elif t_n == 1 or t_n == 4: # middle left or right
-                            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.268
-                        elif t_n == 2: # bottom left
-                            self.tentacles[t_n]['sprite']['rect'].y = screen_height - self.tentacles[t_n]['sprite']['rect'].height
-                        elif t_n == 3: # top right
-                            self.tentacles[t_n]['sprite']['rect'].y = 0
-                        elif t_n == 5: # bottom right
-                            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.6287
+                        self.moved_y(t_n)
                         
                         self.tentacles[t_n]['sprite']['sf'].set_alpha(254)        
                     
@@ -511,16 +505,7 @@ class Boss:
                     
                     self.tentacles[t_n]['sprite']['rect'].x = 0 if t_n < 3 else screen_width - self.tentacles[t_n]['sprite']['rect'].width
                     
-                    if t_n == 0: # top left
-                        self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.0644
-                    elif t_n == 1 or t_n == 4: # middle left or right
-                        self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.268
-                    elif t_n == 2: # bottom left
-                        self.tentacles[t_n]['sprite']['rect'].y = screen_height - self.tentacles[t_n]['sprite']['rect'].height
-                    elif t_n == 3: # top right
-                        self.tentacles[t_n]['sprite']['rect'].y = 0
-                    elif t_n == 5: # bottom right
-                        self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.6287
+                    self.moved_y(t_n)
                     
                 if self.started:
                     objs['fin']['sf'].set_alpha(max(0, objs['fin']['sf'].get_alpha() - 2))
@@ -535,6 +520,18 @@ class Boss:
             if self.show_hb:
                 self.healthbar(self.t_hp)
     
+    def moved_y(self, t_n):
+        if t_n == 0: # top left
+            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.0644
+        elif t_n == 1 or t_n == 4: # middle left or right
+            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.268
+        elif t_n == 2: # bottom left
+            self.tentacles[t_n]['sprite']['rect'].y = screen_height - self.tentacles[t_n]['sprite']['rect'].height
+        elif t_n == 3: # top right
+            self.tentacles[t_n]['sprite']['rect'].y = 0
+        elif t_n == 5: # bottom right
+            self.tentacles[t_n]['sprite']['rect'].y = screen_height * 0.6287
+
     def healthbar(self, t_hp):
         total_hp = sum(t['hp'] for t in self.tentacles)
         max_hp = len(self.tentacles) * t_hp
@@ -570,8 +567,30 @@ class Boss:
         pygame.draw.rect(screen, HEALTHBAR_COLOR, (bar_x, bar_y, bar_width, bar_height))
         pygame.draw.rect(screen, HEALTH_COLOR, (top_left_x, top_left_y, current_bar_width, bar_height))
    
-       
 
+def lh_healthbar(curr_hp):
+    max_hp = STATS['lh_hp']
+    
+    font = pygame.font.Font(None, 50)
+    text = font.render("HP", True, LH_CURR_HP_COLOR)
+    # Получаем прямоугольник текста и задаем его позицию
+    text_rect = text.get_rect()
+    text_rect.centery = 37
+    text_rect.right = LH_HEALTHBAR_POS[0] - 10  # Отступ от левой границы полоски здоровья
+
+    # Рисуем текст на экране
+    screen.blit(text, text_rect)
+
+    # Рисуем синий прямоугольник - максимальное количество здоровья
+    pygame.draw.rect(screen, LH_FULL_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], LH_HEALTHBAR_WIDTH, LH_HEALTHBAR_HEIGHT))
+
+    # Вычисляем ширину зеленого прямоугольника, исходя из текущего здоровья
+    current_health_width = LH_HEALTHBAR_WIDTH * (curr_hp / max_hp)
+
+    # Рисуем зеленый прямоугольник - текущее здоровье
+    pygame.draw.rect(screen, LH_CURR_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], current_health_width, LH_HEALTHBAR_HEIGHT))
+
+        
 def change_sf_color(surface, color):
     # Создание маски для непрозрачных частей
     mask = pygame.mask.from_surface(surface)
@@ -596,9 +615,9 @@ def beam_corners(dx, dy, end_x, end_y):
         perpendicular_dx /= perpendicular_length
         perpendicular_dy /= perpendicular_length
 
-    # Умножаем нормализованный вектор на 100 пикселей
-    perpendicular_dx *= 150 # 150 200 250
-    perpendicular_dy *= 150
+    # Умножаем нормализованный вектор на 150 пикселей
+    perpendicular_dx *= STATS['beam_width'] # 150 200 250
+    perpendicular_dy *= STATS['beam_width']
 
     # Вычисляем координаты вершины слева
     left_vertex_x = end_x + perpendicular_dx
@@ -614,9 +633,9 @@ def beam_corners(dx, dy, end_x, end_y):
         perpendicular_dx_right /= perpendicular_length_right
         perpendicular_dy_right /= perpendicular_length_right
 
-    # Умножаем нормализованный вектор на 100 пикселей
-    perpendicular_dx_right *= 150
-    perpendicular_dy_right *= 150
+    # Умножаем нормализованный вектор на 150 пикселей
+    perpendicular_dx_right *= STATS['beam_width']
+    perpendicular_dy_right *= STATS['beam_width']
 
     # Вычисляем координаты вершины справа
     right_vertex_x = end_x + perpendicular_dx_right
@@ -676,10 +695,12 @@ def check_collision_circle_surface(circle_pos, circle_radius, sprite):
 def game(level, points):
     if (level == 0):
         sys.exit()
+    
+    lh_hp = STATS['lh_hp']
 
     circles = []
     last_circle_spawn_time = 0
-    spawn_delay = 1200 # 1.2 сек
+    spawn_delay = STATS['bullet_cd']
 
     squares = []
     oth_sqs_coords = []
@@ -707,7 +728,7 @@ def game(level, points):
     objs['fin']['sf'].set_alpha(0)
     boss_killed = False
     stage = 1
-    moved_r_l = False
+    moved_x = False
 
     running = True
     clock = pygame.time.Clock()
@@ -812,10 +833,13 @@ def game(level, points):
             screen.blit(obj['sf'], (blit_x, blit_y))
         
         island_center = (objs['isl']['rect'].centerx, objs['isl']['rect'].centery)
-        island_radius = min(objs['isl']['rect'].width, objs['isl']['rect'].height) // 4 - SQ_SIZE
+        island_radius = min(objs['isl']['rect'].width, objs['isl']['rect'].height) // 2 - SQ_SIZE
         island_circle = (island_center, island_radius)
 
         if Square(speed, oth_sqs_coords).check_loss(squares, island_circle):
+            lh_hp -= 1    
+        
+        if lh_hp == 0:
             Screen().endscreen("YOU LOST", level, points)
 
         [sq.draw_square(current_time) for sq in squares]
@@ -848,6 +872,7 @@ def game(level, points):
         [drop.draw(screen) for drop in raindrops]          
     
         Screen().render_info(points, level, len(squares))
+        lh_healthbar(lh_hp)
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
@@ -867,8 +892,8 @@ def game(level, points):
                             max_odd = 100
             elif not boss_killed:
                 Screen.debug_info(boss.tentacles, stage)
-                boss.bossfight(stage,moved_r_l, circles, level, points)
-                moved_r_l = True
+                boss.bossfight(stage, moved_x, circles, level, points)
+                moved_x = True
                 if stage != 3 and sum(t['hp'] for t in boss.tentacles) == 0 and sum(t['sprite']['sf'].get_alpha() for t in boss.tentacles) == 0:
                     stage += 1
                 elif stage == 3 and sum(t['hp'] for t in boss.tentacles) == 0 and boss.started == False:
@@ -876,7 +901,7 @@ def game(level, points):
             else:
                 Screen().endscreen("LEVEL COMPLETED", level, points)
                 save_stats(STATS)
-
+        
         pygame.display.flip()
         clock.tick(60)
 
