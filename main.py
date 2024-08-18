@@ -122,7 +122,7 @@ class Circle:
         circle_x = screen_width // 2
         circle_y = screen_height // 2
 
-        self.circle = (circle_x, circle_y, dx * STATS['bullet_speed'], dy * STATS['bullet_speed'])
+        self.circle = (circle_x, circle_y, dx * STATS['BULLET SPEED'], dy * STATS['BULLET SPEED'])
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
@@ -293,11 +293,15 @@ class Screen:
         logo = logo_font.render('LIGHTHOUSE', True, (255, 255, 255))     
         logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))      
 
-        play_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2, 400, 100)
-        play_text = button_font.render("ENDLESS MODE", True, (0, 0, 0))
+        play_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 - 50, 400, 100)
+        play_text = button_font.render("PLAY", True, (0, 0, 0))
         play_text_rect = play_text.get_rect(center=play_button.center)
 
-        quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 150, 400, 100)
+        shop_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 100, 400, 100)
+        shop_text = button_font.render("SHOP", True, (0, 0, 0))
+        shop_text_rect = shop_text.get_rect(center=shop_button.center)
+
+        quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 250, 400, 100)
         quit_text = button_font.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
@@ -308,6 +312,8 @@ class Screen:
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if play_button.collidepoint(event.pos):
                         game(level=1, points=0)
+                    if shop_button.collidepoint(event.pos):
+                        self.shop()
                     if quit_button.collidepoint(event.pos):
                         sys.exit()
                         
@@ -317,6 +323,9 @@ class Screen:
 
             pygame.draw.rect(start_screen, (255, 255, 255), play_button)
             start_screen.blit(play_text, play_text_rect)
+
+            pygame.draw.rect(start_screen, (255, 255, 255), shop_button)
+            start_screen.blit(shop_text, shop_text_rect)
 
             pygame.draw.rect(start_screen, (255, 255, 255), quit_button)
             start_screen.blit(quit_text, quit_text_rect)
@@ -342,6 +351,101 @@ class Screen:
                 screen.blit(transparent_rect, text_rect.topleft)
                 screen.blit(points_text, text_rect.topleft)
 
+    def shop(self):
+        shop_screen = pygame.Surface((screen_width, screen_height))
+        shop_screen.fill((0, 0, 0))
+
+        font = pygame.font.Font(None, 72)
+        button_font = pygame.font.Font(None, 60)
+
+        stats_to_display = [
+            ("BULLET DAMAGE", "_progression_bullet_damage"),
+            ("BULLET KNOCKBACK", "_progression_bullet_knockback"),
+            ("BULLET COOLDOWN", "_progression_bullet_cooldown"),
+            ("BULLET SPEED", "_progression_bullet_speed"),
+            ("TURRET LEVEL", "_progression_turret_level"),
+            ("BEAM WIDTH", "_progression_beam_width"),
+            ("LIGHTHOUSE HP", "_progression_lighthouse_hp"),
+        ]
+
+        y_offset = 150
+        start_y = 100
+
+        while True:
+            shop_screen.fill((0, 0, 0))
+
+            upgrade_button_rects = []
+
+            for i, (stat_name, prog_name) in enumerate(stats_to_display):
+                current_stat = STATS[stat_name]
+                text = font.render(f"{stat_name}: {current_stat}", True, (0, 0, 0))
+                text_rect = text.get_rect(topleft=(200, start_y + i * y_offset))
+                pygame.draw.rect(shop_screen, (255, 255, 255), text_rect.inflate(20, 20))
+                shop_screen.blit(text, text_rect)
+
+                if prog_name:
+                    progression = list(map(int, STATS[prog_name].split(', ')))
+                    cell_width = 50
+                    cell_height = 50
+                    cell_margin = 10
+                    cell_x_start = text_rect.right + 100
+                    cell_y = text_rect.centery - cell_height // 2
+
+                    if STATS[stat_name] != max(progression):
+                        cell_color = (255, 255, 255) 
+                        button_text = "UPGRADE"
+                    else:
+                        cell_color = (255, 188, 0)
+                        button_text = "MAXED OUT"
+                    
+
+                    for j, value in enumerate(progression):
+                        cell_x = cell_x_start + j * (cell_width + cell_margin)
+                        cell_rect = pygame.Rect(cell_x, cell_y, cell_width, cell_height)
+
+                        pygame.draw.rect(shop_screen, cell_color, cell_rect)
+
+                        if current_stat >= value:
+                            inner_rect = cell_rect.inflate(-10, -10)
+                            pygame.draw.rect(shop_screen, (0, 0, 0), inner_rect)
+                        elif current_stat < value and j == progression.index(min([v for v in progression if v > current_stat])):
+                            cell_value_text = button_font.render(str(value), True, (0, 0, 0))
+                            cell_value_text_rect = cell_value_text.get_rect(center=cell_rect.center)
+                            shop_screen.blit(cell_value_text, cell_value_text_rect)
+
+                    upgrade_button_rect = pygame.Rect(cell_x_start + len(progression) * (cell_width + cell_margin) + 50, cell_y, 260, 70)
+                    upgrade_button_text = button_font.render(button_text, True, (0, 0, 0))
+                    upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
+                    pygame.draw.rect(shop_screen, (255, 255, 255), upgrade_button_rect)
+                    shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
+                    
+                    upgrade_button_rects.append((upgrade_button_rect, stat_name, progression))
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        self.startscreen()
+                        return
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    for upgrade_button_rect, stat_name, progression in upgrade_button_rects:
+                        if upgrade_button_rect.collidepoint(event.pos):
+                            current_stat = STATS[stat_name]
+                            next_stat = self.get_next_value(current_stat, progression)
+                            if next_stat is not None:
+                                STATS[stat_name] = next_stat
+                                text = font.render(f"{stat_name}: {STATS[stat_name]}", True, (0, 0, 0))
+                            save_stats(STATS)
+
+            screen.blit(shop_screen, (0, 0))
+            pygame.display.flip()
+
+    def get_next_value(self, current_value, progression):
+        for value in progression:
+            if value > current_value:
+                return value
+        return None
 
 class Raindrop:
     def __init__(self):
@@ -374,7 +478,7 @@ class Boss:
             tentacle_props.append(objs[key])
 
         self.tentacles = []
-        self.t_hp = 2 # max hp for each tentacle
+        self.t_hp = 3 # max hp for each tentacle
         for tentacle_sf in tentacle_props:
             self.tentacles.append({
                 'hp': self.t_hp,
@@ -421,7 +525,7 @@ class Boss:
                         collision_lt = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[t_n]['sprite'])
                         if collision_lt and self.tentacles[t_n]['hp'] > 0:
                             circles.remove(circle)
-                            self.tentacles[t_n]['hp'] -= STATS['bullet_damage']
+                            self.tentacles[t_n]['hp'] -= STATS['BULLET DAMAGE']
                     if self.tentacles[t_n]['hp'] > 0:
                         if t_n < 3:
                             if self.tentacles[t_n]['sprite']['rect'].x != 0:
@@ -476,12 +580,12 @@ class Boss:
                         collision_lt = check_collision_circle_surface((circle_x, circle_y), CIRCLE_RAD, self.tentacles[self.curr_t_n]['sprite'])
                         if collision_lt and self.tentacles[self.curr_t_n]['hp'] > 0:
                             circles.remove(circle)
-                            self.tentacles[self.curr_t_n]['hp'] -= STATS['bullet_damage']
-                            self.tentacles[self.curr_t_n]['sprite']['sf'].set_alpha(self.tentacles[self.curr_t_n]['sprite']['sf'].get_alpha() - int(255 / (self.t_hp / STATS['bullet_damage'])))
+                            self.tentacles[self.curr_t_n]['hp'] -= STATS['BULLET DAMAGE']
+                            self.tentacles[self.curr_t_n]['sprite']['sf'].set_alpha(self.tentacles[self.curr_t_n]['sprite']['sf'].get_alpha() - int(255 / (self.t_hp / STATS['BULLET DAMAGE'])))
                             if self.curr_t_n < 3: # left tentacles are knokbacked to the left, reversed for the right ones
-                                self.tentacles[self.curr_t_n]['sprite']['rect'].x -= STATS['bullet_knockback']
+                                self.tentacles[self.curr_t_n]['sprite']['rect'].x -= STATS['BULLET KNOCKBACK']
                             else:
-                                self.tentacles[self.curr_t_n]['sprite']['rect'].x += STATS['bullet_knockback']
+                                self.tentacles[self.curr_t_n]['sprite']['rect'].x += STATS['BULLET KNOCKBACK']
                     if self.tentacles[self.curr_t_n]['hp'] > 0:
                         if self.curr_t_n < 3:
                             if self.tentacles[self.curr_t_n]['sprite']['rect'].x != 0:
@@ -569,7 +673,7 @@ class Boss:
    
 
 def lh_healthbar(curr_hp):
-    max_hp = STATS['lh_hp']
+    max_hp = STATS['LIGHTHOUSE HP']
     
     font = pygame.font.Font(None, 50)
     text = font.render("HP", True, LH_CURR_HP_COLOR)
@@ -589,8 +693,7 @@ def lh_healthbar(curr_hp):
 
     # Рисуем зеленый прямоугольник - текущее здоровье
     pygame.draw.rect(screen, LH_CURR_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], current_health_width, LH_HEALTHBAR_HEIGHT))
-
-        
+      
 def change_sf_color(surface, color):
     # Создание маски для непрозрачных частей
     mask = pygame.mask.from_surface(surface)
@@ -616,8 +719,8 @@ def beam_corners(dx, dy, end_x, end_y):
         perpendicular_dy /= perpendicular_length
 
     # Умножаем нормализованный вектор на 150 пикселей
-    perpendicular_dx *= STATS['beam_width'] # 150 200 250
-    perpendicular_dy *= STATS['beam_width']
+    perpendicular_dx *= STATS['BEAM WIDTH'] # 150 200 250
+    perpendicular_dy *= STATS['BEAM WIDTH']
 
     # Вычисляем координаты вершины слева
     left_vertex_x = end_x + perpendicular_dx
@@ -634,8 +737,8 @@ def beam_corners(dx, dy, end_x, end_y):
         perpendicular_dy_right /= perpendicular_length_right
 
     # Умножаем нормализованный вектор на 150 пикселей
-    perpendicular_dx_right *= STATS['beam_width']
-    perpendicular_dy_right *= STATS['beam_width']
+    perpendicular_dx_right *= STATS['BEAM WIDTH']
+    perpendicular_dy_right *= STATS['BEAM WIDTH']
 
     # Вычисляем координаты вершины справа
     right_vertex_x = end_x + perpendicular_dx_right
@@ -696,11 +799,11 @@ def game(level, points):
     if (level == 0):
         sys.exit()
     
-    lh_hp = STATS['lh_hp']
+    lh_hp = STATS['LIGHTHOUSE HP']
 
     circles = []
     last_circle_spawn_time = 0
-    spawn_delay = STATS['bullet_cd']
+    spawn_delay = STATS['BULLET COOLDOWN']
 
     squares = []
     oth_sqs_coords = []
