@@ -361,7 +361,7 @@ class Screen:
         stats_to_display = [
             ("BULLET DAMAGE", "_progression_bullet_damage"),
             ("BULLET KNOCKBACK", "_progression_bullet_knockback"),
-            ("BULLET COOLDOWN", "_progression_bullet_cooldown"),
+            ("BULLET FREQUENCY", "_progression_bullet_frequency"),
             ("BULLET SPEED", "_progression_bullet_speed"),
             ("TURRET LEVEL", "_progression_turret_level"),
             ("BEAM WIDTH", "_progression_beam_width"),
@@ -369,7 +369,8 @@ class Screen:
         ]
 
         y_offset = 150
-        start_y = 100
+        start_y = 50
+        upgrade_x = 1350
 
         while True:
             shop_screen.fill((0, 0, 0))
@@ -379,16 +380,16 @@ class Screen:
             for i, (stat_name, prog_name) in enumerate(stats_to_display):
                 current_stat = STATS[stat_name]
                 text = font.render(f"{stat_name}: {current_stat}", True, (0, 0, 0))
-                text_rect = text.get_rect(topleft=(200, start_y + i * y_offset))
+                text_rect = text.get_rect(topleft=(800 - text.get_width(), start_y + i * y_offset))
                 pygame.draw.rect(shop_screen, (255, 255, 255), text_rect.inflate(20, 20))
                 shop_screen.blit(text, text_rect)
 
                 if prog_name:
                     progression = list(map(int, STATS[prog_name].split(', ')))
-                    cell_width = 50
+                    cell_width = 70
                     cell_height = 50
                     cell_margin = 10
-                    cell_x_start = text_rect.right + 100
+                    cell_x_start = 880
                     cell_y = text_rect.centery - cell_height // 2
 
                     if STATS[stat_name] != max(progression):
@@ -413,7 +414,7 @@ class Screen:
                             cell_value_text_rect = cell_value_text.get_rect(center=cell_rect.center)
                             shop_screen.blit(cell_value_text, cell_value_text_rect)
 
-                    upgrade_button_rect = pygame.Rect(cell_x_start + len(progression) * (cell_width + cell_margin) + 50, cell_y, 260, 70)
+                    upgrade_button_rect = pygame.Rect(upgrade_x, cell_y, 260, 70)
                     upgrade_button_text = button_font.render(button_text, True, (0, 0, 0))
                     upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
                     pygame.draw.rect(shop_screen, (255, 255, 255), upgrade_button_rect)
@@ -803,7 +804,7 @@ def game(level, points):
 
     circles = []
     last_circle_spawn_time = 0
-    spawn_delay = STATS['BULLET COOLDOWN']
+    spawn_delay = 1200 - STATS['BULLET FREQUENCY']
 
     squares = []
     oth_sqs_coords = []
