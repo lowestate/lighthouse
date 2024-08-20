@@ -6,7 +6,13 @@ from consts import *
 
 pygame.init()
 pygame.font.init()
-font = pygame.font.Font('graphics/font/super_mario.ttf', 42)
+
+font_xs = pygame.font.Font('graphics/font/super_mario.ttf', 30)
+font_s = pygame.font.Font('graphics/font/super_mario.ttf', 40)
+font_m = pygame.font.Font('graphics/font/super_mario.ttf', 50)
+font_l = pygame.font.Font('graphics/font/super_mario.ttf', 60)
+font_xl = pygame.font.Font('graphics/font/super_mario.ttf', 80)
+font_for_the_biggest_nigga = pygame.font.Font('graphics/font/super_mario.ttf', 100)
 
 info = pygame.display.Info()
 unscaled_scr_width = info.current_w
@@ -36,7 +42,9 @@ paths = [
     'graphics/boss/right_middle.png',
     'graphics/boss/right_top.png',
     'graphics/boss/preview.png',
-    'graphics/boss/fin.png'
+    'graphics/boss/fin.png',
+    'graphics/bg/bg_shop.png',
+    'graphics/bg/shop_return_button.png'
 ]
 
 sprite_properties: dict = {"img", "rect", "sf"} # image; rect of this image; surface with this image
@@ -55,18 +63,23 @@ objs = {
     "rt": dict.fromkeys(sprite_properties),
     "preview": dict.fromkeys(sprite_properties),
     'fin':  dict.fromkeys(sprite_properties),
+    # shop:
+    'bg_shop':  dict.fromkeys(sprite_properties),
+    'shop_return':  dict.fromkeys(sprite_properties),
 }
 
 for key, path in zip(objs.keys(), paths):
     img_path = os.path.join(os.path.dirname(__file__), path)
     objs[key]['img'] = pygame.image.load(img_path).convert_alpha()
 
-    if key == "bg_isl" or key == "preview":
+    if key == "bg_isl" or key == "preview" or key == 'bg_shop':
         objs[key]['img'] = pygame.transform.scale(objs[key]['img'], (screen_width, screen_height))
 
     objs[key]['rect'] = objs[key]['img'].get_rect()       
-
-    if key == 'lh_top' or key == 'lh' or key == 'isl' or key == 'preview' or key == 'bg_isl' or key == 'fin':
+    if key == 'shop_return':
+        objs[key]['rect'].x = screen_width * 0.027
+        objs[key]['rect'].y = screen_height * 0.045
+    elif key == 'lh_top' or key == 'lh' or key == 'isl' or key == 'preview' or key == 'bg_isl' or key == 'fin' or key == 'bg_shop':
         objs[key]['rect'].center = (screen_width // 2, screen_height // 2)
     else: # starting pos
         objs[key]['rect'].x = 0

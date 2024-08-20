@@ -156,7 +156,7 @@ class Screen:
         }
         
         for key in text_to_blit: 
-            points_text = font.render(f"{key}{text_to_blit[key][0]}", True, (255, 255, 255))
+            points_text = font_s.render(f"{key}{text_to_blit[key][0]}", True, (255, 255, 255))
             text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 40))
             transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
             transparent_rect.fill((0, 0, 0, 0))
@@ -167,10 +167,7 @@ class Screen:
         victory_screen = pygame.Surface((screen_width, screen_height))
         victory_screen.fill((0, 0, 0))
 
-        font = pygame.font.Font(None, 90)
-        button_font = pygame.font.Font(None, 60)
-
-        text = font.render(result, True, (255, 255, 255))     
+        text = font_xl.render(result, True, (255, 255, 255))     
         text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
 
         if result == 'YOU LOST' or result == 'KRAKEN REACHED YOU':
@@ -181,25 +178,25 @@ class Screen:
         offset = 0
         if lost:
             offset = 150
-            level_text = font.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
+            level_text = font_l.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
         else:
-            level_text = font.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
+            level_text = font_l.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
             next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-            next_level_text = button_font.render("NEXT LEVEL", True, (0, 0, 0))
+            next_level_text = font_l.render("NEXT LEVEL", True, (0, 0, 0))
             next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
 
         level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
 
-        score_text = font.render('SCORE: ' + str(score), True, (255, 255, 255))     
+        score_text = font_l.render('SCORE: ' + str(score), True, (255, 255, 255))     
         score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
           
 
         replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150 - offset, 300, 100)
-        replay_text = button_font.render("RESTART", True, (0, 0, 0))
+        replay_text = font_m.render("RESTART", True, (0, 0, 0))
         replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
         quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300 - offset, 300, 100)
-        quit_text = button_font.render("QUIT", True, (0, 0, 0))
+        quit_text = font_m.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
         alpha = 0
@@ -287,22 +284,19 @@ class Screen:
         start_screen = pygame.Surface((screen_width, screen_height))
         start_screen.fill((0, 0, 0))
 
-        logo_font = pygame.font.Font(None, 200)
-        button_font = pygame.font.Font(None, 60)
-
-        logo = logo_font.render('LIGHTHOUSE', True, (255, 255, 255))     
+        logo = font_for_the_biggest_nigga.render('LIGHTHOUSE', True, (255, 255, 255))     
         logo_rect = logo.get_rect(center=(screen_width // 2, screen_height // 4))      
 
         play_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 - 50, 400, 100)
-        play_text = button_font.render("PLAY", True, (0, 0, 0))
+        play_text = font_m.render("PLAY", True, (0, 0, 0))
         play_text_rect = play_text.get_rect(center=play_button.center)
 
         shop_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 100, 400, 100)
-        shop_text = button_font.render("SHOP", True, (0, 0, 0))
+        shop_text = font_m.render("SHOP", True, (0, 0, 0))
         shop_text_rect = shop_text.get_rect(center=shop_button.center)
 
         quit_button = pygame.Rect(screen_width // 2 - 200, screen_height // 2 + 250, 400, 100)
-        quit_text = button_font.render("QUIT", True, (0, 0, 0))
+        quit_text = font_m.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
         while True:
@@ -334,7 +328,7 @@ class Screen:
             pygame.display.flip()
     
     def debug_info(tentacles, stage):
-        stage_text = font.render(f"STAGE: {stage}", True, (255, 255, 255))
+        stage_text = font_xs.render(f"STAGE: {stage}", True, (255, 255, 255))
         stage_rect = stage_text.get_rect(topright=(screen_width - 10, 20))
         tr_rect = pygame.Surface((stage_rect.width, stage_rect.height), pygame.SRCALPHA)
         tr_rect.fill((0, 0, 0, 0))
@@ -344,7 +338,7 @@ class Screen:
         for i, t in enumerate(tentacles):
             if 'hp' in t:
                 label = positions[i % len(positions)]  # Определение метки
-                points_text = font.render(f"{label}: {t['hp']}, {t['sprite']['rect'].x}, {t['sprite']['rect'].y}", True, (255, 255, 255))
+                points_text = font_xs.render(f"{label}: {t['hp']}, {t['sprite']['rect'].x}, {t['sprite']['rect'].y}", True, (255, 255, 255))
                 text_rect = points_text.get_rect(topright=(screen_width - 10, 40 + i * 30))
                 transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
                 transparent_rect.fill((0, 0, 0, 0))
@@ -353,14 +347,10 @@ class Screen:
 
     def shop(self):
         shop_screen = pygame.Surface((screen_width, screen_height))
-        shop_screen.fill((0, 0, 0))
-
-        font = pygame.font.Font(None, 72)
-        button_font = pygame.font.Font(None, 60)
-
+        shop_screen.blit(objs['bg_shop']['sf'], objs['bg_shop']['rect'])
+        
         stats_to_display = [
             ("BULLET DAMAGE", "_progression_bullet_damage"),
-            ("BULLET KNOCKBACK", "_progression_bullet_knockback"),
             ("BULLET FREQUENCY", "_progression_bullet_frequency"),
             ("BULLET SPEED", "_progression_bullet_speed"),
             ("TURRET LEVEL", "_progression_turret_level"),
@@ -368,65 +358,77 @@ class Screen:
             ("LIGHTHOUSE HP", "_progression_lighthouse_hp"),
         ]
 
-        y_offset = 150
-        start_y = 50
-        upgrade_x = 1350
+        start_x_left_col = 200
+        start_x_right_col = start_x_left_col + 800 + 100
+        start_y = 230
+        y_offset = 300
+        upgrade_x_offset = 10
+        progress_x_offset = -20
+        cell_size = 70
+        cell_margin = 10
+        button_positions = {}
+        
+        shop_text = font_xl.render(f"SHOP", True, WHITE)
+        shop_rect = shop_text.get_rect(center=(screen_width // 2, 90))
+        shop_screen.blit(shop_text, shop_rect)
+        shop_screen.blit(objs['shop_return']['sf'], objs['shop_return']['rect'])
 
         while True:
-            shop_screen.fill((0, 0, 0))
-
             upgrade_button_rects = []
 
             for i, (stat_name, prog_name) in enumerate(stats_to_display):
+                col = i % 2
+                row = i // 2
+
                 current_stat = STATS[stat_name]
-                text = font.render(f"{stat_name}: {current_stat}", True, (0, 0, 0))
-                text_rect = text.get_rect(topleft=(800 - text.get_width(), start_y + i * y_offset))
-                pygame.draw.rect(shop_screen, (255, 255, 255), text_rect.inflate(20, 20))
+
+                stat_x = start_x_left_col if col == 0 else start_x_right_col
+                stat_y = start_y + row * y_offset
+
+                text = font_m.render(f"{stat_name}: {current_stat}", True, BLACK)
+                text_rect = text.get_rect(topleft=(stat_x, stat_y))
+
+                pygame.draw.rect(shop_screen, WHITE, (text_rect.x - 20, text_rect.y - 30, 680, 100))
                 shop_screen.blit(text, text_rect)
 
                 if prog_name:
                     progression = list(map(int, STATS[prog_name].split(', ')))
-                    cell_width = 70
-                    cell_height = 50
-                    cell_margin = 10
-                    cell_x_start = 880
-                    cell_y = text_rect.centery - cell_height // 2
-
-                    if STATS[stat_name] != max(progression):
-                        cell_color = (255, 255, 255) 
-                        button_text = "UPGRADE"
-                    else:
-                        cell_color = (255, 188, 0)
-                        button_text = "MAXED OUT"
                     
+                    cell_x_start = stat_x + progress_x_offset
+                    cell_y = text_rect.bottom + 40
+                   
+                    cell_color = WHITE if STATS[stat_name] != max(progression) else YELLOW
 
                     for j, value in enumerate(progression):
-                        cell_x = cell_x_start + j * (cell_width + cell_margin)
-                        cell_rect = pygame.Rect(cell_x, cell_y, cell_width, cell_height)
-
+                        cell_x = cell_x_start + j * (cell_size + cell_margin)
+                        cell_rect = pygame.Rect(cell_x, cell_y, cell_size, cell_size)
+                        
                         pygame.draw.rect(shop_screen, cell_color, cell_rect)
 
                         if current_stat >= value:
                             inner_rect = cell_rect.inflate(-10, -10)
                             pygame.draw.rect(shop_screen, (0, 0, 0), inner_rect)
                         elif current_stat < value and j == progression.index(min([v for v in progression if v > current_stat])):
-                            cell_value_text = button_font.render(str(value), True, (0, 0, 0))
+                            cell_value_text = font_s.render(str(value), True, (0, 0, 0))
                             cell_value_text_rect = cell_value_text.get_rect(center=cell_rect.center)
                             shop_screen.blit(cell_value_text, cell_value_text_rect)
 
-                    upgrade_button_rect = pygame.Rect(upgrade_x, cell_y, 260, 70)
-                    upgrade_button_text = button_font.render(button_text, True, (0, 0, 0))
-                    upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
-                    pygame.draw.rect(shop_screen, (255, 255, 255), upgrade_button_rect)
-                    shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
-                    
-                    upgrade_button_rects.append((upgrade_button_rect, stat_name, progression))
+                    if STATS[stat_name] != max(progression):
+                        upgrade_button_rect = pygame.Rect(cell_x_start + (len(progression) * (cell_size + cell_margin)) + upgrade_x_offset, cell_y, 270, 100)
+                        upgrade_button_text = font_s.render("UPGRADE", True, BLACK)
+                        upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
+
+                        button_positions[stat_name] = (upgrade_button_rect, upgrade_button_text, upgrade_button_text_rect)
+                        
+                        pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
+                        shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
+
+                        upgrade_button_rects.append((upgrade_button_rect, stat_name, progression))
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     sys.exit()
-                elif event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_ESCAPE:
+                elif (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.MOUSEBUTTONDOWN and objs['shop_return']['rect'].collidepoint(event.pos):
                         self.startscreen()
                         return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
@@ -436,7 +438,14 @@ class Screen:
                             next_stat = self.get_next_value(current_stat, progression)
                             if next_stat is not None:
                                 STATS[stat_name] = next_stat
-                                text = font.render(f"{stat_name}: {STATS[stat_name]}", True, (0, 0, 0))
+                                text = font_s.render(f"{stat_name}: {STATS[stat_name]}", True, BLACK)
+
+                                if STATS[stat_name] == max(progression):
+                                    pygame.draw.rect(shop_screen, objs['bg_shop']['sf'].get_at((upgrade_button_rect.x, upgrade_button_rect.y)), upgrade_button_rect)
+                                else:
+                                    upgrade_button_rect, upgrade_button_text, upgrade_button_text_rect = button_positions[stat_name]
+                                    pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
+                                    shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
                             save_stats(STATS)
 
             screen.blit(shop_screen, (0, 0))
@@ -447,6 +456,7 @@ class Screen:
             if value > current_value:
                 return value
         return None
+
 
 class Raindrop:
     def __init__(self):
@@ -653,13 +663,11 @@ class Boss:
         top_left_x = bar_width - current_bar_width / 2
         top_left_y = bar_center_y - bar_height / 2
 
-        font = pygame.font.Font(None, 48)
-        text = font.render("KRAKEN", True, (255, 255, 255))
-
-        text_rect = text.get_rect(center=(screen_width / 2, bar_center_y - screen_height / 48))
+        text = font_m.render("KRAKEN", True, (255, 255, 255))
+        text_rect = text.get_rect(center=(screen_width / 2, bar_center_y - screen_height / 40))
         screen.blit(text, text_rect)
 
-        text_surface = font.render("PRESS SPACE", True, (255, 255, 255))  # Белый цвет текста
+        text_surface = font_s.render("PRESS SPACE", True, (255, 255, 255))  # Белый цвет текста
         text1_rect = text_surface.get_rect()
 
         screen_rect = screen.get_rect()
@@ -676,23 +684,17 @@ class Boss:
 def lh_healthbar(curr_hp):
     max_hp = STATS['LIGHTHOUSE HP']
     
-    font = pygame.font.Font(None, 50)
-    text = font.render("HP", True, LH_CURR_HP_COLOR)
-    # Получаем прямоугольник текста и задаем его позицию
+    text = font_xs.render("HP", True, LH_CURR_HP_COLOR)
+
     text_rect = text.get_rect()
     text_rect.centery = 37
-    text_rect.right = LH_HEALTHBAR_POS[0] - 10  # Отступ от левой границы полоски здоровья
-
-    # Рисуем текст на экране
+    text_rect.right = LH_HEALTHBAR_POS[0] - 15
     screen.blit(text, text_rect)
 
-    # Рисуем синий прямоугольник - максимальное количество здоровья
-    pygame.draw.rect(screen, LH_FULL_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], LH_HEALTHBAR_WIDTH, LH_HEALTHBAR_HEIGHT))
+    lh_healthbar_width = LH_1HP_WIDTH * STATS['LIGHTHOUSE HP']
+    current_health_width = lh_healthbar_width * (curr_hp / max_hp)
 
-    # Вычисляем ширину зеленого прямоугольника, исходя из текущего здоровья
-    current_health_width = LH_HEALTHBAR_WIDTH * (curr_hp / max_hp)
-
-    # Рисуем зеленый прямоугольник - текущее здоровье
+    pygame.draw.rect(screen, LH_FULL_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], lh_healthbar_width, LH_HEALTHBAR_HEIGHT))
     pygame.draw.rect(screen, LH_CURR_HP_COLOR, (LH_HEALTHBAR_POS[0], LH_HEALTHBAR_POS[1], current_health_width, LH_HEALTHBAR_HEIGHT))
       
 def change_sf_color(surface, color):
@@ -710,38 +712,33 @@ def change_sf_color(surface, color):
                 surface.set_at((x, y), color_surface.get_at((x, y)))
 
 def beam_corners(dx, dy, end_x, end_y):
-    perpendicular_dx = -dy
-    perpendicular_dy = dx
+    # вычисляем координаты левого края
+    perpendicular_dx_left = -dy
+    perpendicular_dy_left = dx
 
-    # Нормализуем вектор
-    perpendicular_length = math.sqrt(perpendicular_dx ** 2 + perpendicular_dy ** 2)
+    perpendicular_length = math.sqrt(perpendicular_dx_left ** 2 + perpendicular_dy_left ** 2)
     if perpendicular_length > 0:
-        perpendicular_dx /= perpendicular_length
-        perpendicular_dy /= perpendicular_length
+        perpendicular_dx_left /= perpendicular_length
+        perpendicular_dy_left /= perpendicular_length
 
-    # Умножаем нормализованный вектор на 150 пикселей
-    perpendicular_dx *= STATS['BEAM WIDTH'] # 150 200 250
-    perpendicular_dy *= STATS['BEAM WIDTH']
+    perpendicular_dx_left *= STATS['BEAM WIDTH'] * 10
+    perpendicular_dy_left *= STATS['BEAM WIDTH'] * 10
 
-    # Вычисляем координаты вершины слева
-    left_vertex_x = end_x + perpendicular_dx
-    left_vertex_y = end_y + perpendicular_dy
+    left_vertex_x = end_x + perpendicular_dx_left
+    left_vertex_y = end_y + perpendicular_dy_left
 
-    # Находим вектор, перпендикулярный лучу в его конце справа
+    # вычисляем координаты правого края
     perpendicular_dx_right = dy
     perpendicular_dy_right = -dx
 
-    # Нормализуем вектор
     perpendicular_length_right = math.sqrt(perpendicular_dx_right ** 2 + perpendicular_dy_right ** 2)
     if (perpendicular_length_right > 0):
         perpendicular_dx_right /= perpendicular_length_right
         perpendicular_dy_right /= perpendicular_length_right
 
-    # Умножаем нормализованный вектор на 150 пикселей
-    perpendicular_dx_right *= STATS['BEAM WIDTH']
-    perpendicular_dy_right *= STATS['BEAM WIDTH']
+    perpendicular_dx_right *= STATS['BEAM WIDTH'] * 10
+    perpendicular_dy_right *= STATS['BEAM WIDTH'] * 10
 
-    # Вычисляем координаты вершины справа
     right_vertex_x = end_x + perpendicular_dx_right
     right_vertex_y = end_y + perpendicular_dy_right
 
@@ -804,7 +801,7 @@ def game(level, points):
 
     circles = []
     last_circle_spawn_time = 0
-    spawn_delay = 1200 - STATS['BULLET FREQUENCY']
+    spawn_delay = 1200 - STATS['BULLET FREQUENCY'] * 10
 
     squares = []
     oth_sqs_coords = []

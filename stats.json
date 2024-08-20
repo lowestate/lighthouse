@@ -1,17 +1,17 @@
 {
-    "total_sqs_killed": 1302,
+    "total_sqs_killed": 1309,
     "BULLET DAMAGE": 1,
     "_progression_bullet_damage": "1, 2, 4, 7, 10",
     "BULLET KNOCKBACK": 50,
     "_progression_bullet_knockback": "50, 70, 100",
-    "BULLET FREQUENCY": 100,
-    "_progression_bullet_frequency": "100, 450, 700, 900, 1000",
+    "BULLET FREQUENCY": 10,
+    "_progression_bullet_frequency": "10, 45, 70, 90, 100",
     "BULLET SPEED": 7,
     "_progression_bullet_speed": "7, 9, 12, 14, 17",
     "TURRET LEVEL": 1,
     "_progression_turret_level": "1, 2, 3, 4, 5",
-    "BEAM WIDTH": 150,
-    "_progression_beam_width": "150, 180, 220, 245, 275",
+    "BEAM WIDTH": 15,
+    "_progression_beam_width": "15, 18, 22, 25, 28",
     "LIGHTHOUSE HP": 2,
-    "_progression_lighthouse_hp": "2, 3, 4, 5"
+    "_progression_lighthouse_hp": "2, 3, 4, 5, 6"
 }
