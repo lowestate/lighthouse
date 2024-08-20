@@ -167,8 +167,8 @@ class Screen:
         victory_screen = pygame.Surface((screen_width, screen_height))
         victory_screen.fill((0, 0, 0))
 
-        text = font_xl.render(result, True, (255, 255, 255))     
-        text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4))
+        text = font_for_the_biggest_nigga.render(result, True, (255, 255, 255))     
+        text_rect = text.get_rect(center=(screen_width // 2, screen_height // 4 - 100))
 
         if result == 'YOU LOST' or result == 'KRAKEN REACHED YOU':
             lost = True
@@ -178,24 +178,23 @@ class Screen:
         offset = 0
         if lost:
             offset = 150
-            level_text = font_l.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
+            level_text = font_xl.render('LEVELS COMPLETED: ' + str(curr_level-1), True, (255, 255, 255))
         else:
-            level_text = font_l.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
-            next_level_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2, 300, 100)
-            next_level_text = font_l.render("NEXT LEVEL", True, (0, 0, 0))
+            level_text = font_xl.render('NEXT LEVEL: ' + str(curr_level+1), True, (255, 255, 255))
+            next_level_button = pygame.Rect(screen_width // 2 - 175, screen_height // 2, 350, 100)
+            next_level_text = font_m.render("NEXT LEVEL", True, (0, 0, 0))
             next_level_text_rect = next_level_text.get_rect(center=next_level_button.center)
 
         level_rect = level_text.get_rect(center=(screen_width // 2, screen_height // 4 + 100))
 
         score_text = font_l.render('SCORE: ' + str(score), True, (255, 255, 255))     
-        score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))
-          
+        score_rect = score_text.get_rect(center=(screen_width // 2, screen_height // 4 + 200))   
 
-        replay_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 150 - offset, 300, 100)
+        replay_button = pygame.Rect(screen_width // 2 - 175, screen_height // 2 + 150 - offset, 350, 100)
         replay_text = font_m.render("RESTART", True, (0, 0, 0))
         replay_text_rect = replay_text.get_rect(center=replay_button.center)
 
-        quit_button = pygame.Rect(screen_width // 2 - 150, screen_height // 2 + 300 - offset, 300, 100)
+        quit_button = pygame.Rect(screen_width // 2 - 175, screen_height // 2 + 300 - offset, 350, 100)
         quit_text = font_m.render("QUIT", True, (0, 0, 0))
         quit_text_rect = quit_text.get_rect(center=quit_button.center)
 
@@ -346,8 +345,8 @@ class Screen:
                 screen.blit(points_text, text_rect.topleft)
 
     def shop(self):
-        shop_screen = pygame.Surface((screen_width, screen_height))
-        shop_screen.blit(objs['bg_shop']['sf'], objs['bg_shop']['rect'])
+        shop_screen = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
+        
         
         stats_to_display = [
             ("BULLET DAMAGE", "_progression_bullet_damage"),
@@ -370,12 +369,18 @@ class Screen:
         
         shop_text = font_xl.render(f"SHOP", True, WHITE)
         shop_rect = shop_text.get_rect(center=(screen_width // 2, 90))
-        shop_screen.blit(shop_text, shop_rect)
-        shop_screen.blit(objs['shop_return']['sf'], objs['shop_return']['rect'])
+        
+
+        reset_button_rect = pygame.Rect(1650, 50, 270, 100)
+        reset_button_text = font_s.render("reset", True, WHITE)
+        
 
         while True:
-            upgrade_button_rects = []
-
+            upgrade_button_rects = []  
+            shop_screen.blit(objs['bg_shop']['sf'], objs['bg_shop']['rect'])
+            shop_screen.blit(shop_text, shop_rect)
+            shop_screen.blit(objs['shop_return']['sf'], objs['shop_return']['rect'])
+            shop_screen.blit(reset_button_text, reset_button_rect)
             for i, (stat_name, prog_name) in enumerate(stats_to_display):
                 col = i % 2
                 row = i // 2
@@ -385,10 +390,12 @@ class Screen:
                 stat_x = start_x_left_col if col == 0 else start_x_right_col
                 stat_y = start_y + row * y_offset
 
-                text = font_m.render(f"{stat_name}: {current_stat}", True, BLACK)
+                text = font_m.render(f"{stat_name}: {current_stat}", True, WHITE)
                 text_rect = text.get_rect(topleft=(stat_x, stat_y))
-
-                pygame.draw.rect(shop_screen, WHITE, (text_rect.x - 20, text_rect.y - 30, 680, 100))
+                #pygame.draw.rect(shop_screen, (64, 64, 64), (text_rect.x - 20, text_rect.y - 30, 680, 100))
+                transparent_rect = pygame.Surface((680, 100), pygame.SRCALPHA)
+                transparent_rect.fill((42, 101, 161, 127))
+                shop_screen.blit(transparent_rect, (text_rect.x - 20, text_rect.y - 30))
                 shop_screen.blit(text, text_rect)
 
                 if prog_name:
@@ -415,15 +422,22 @@ class Screen:
 
                     if STATS[stat_name] != max(progression):
                         upgrade_button_rect = pygame.Rect(cell_x_start + (len(progression) * (cell_size + cell_margin)) + upgrade_x_offset, cell_y, 270, 100)
-                        upgrade_button_text = font_s.render("UPGRADE", True, BLACK)
+                        upgrade_button_text = font_s.render("UPGRADE", True, WHITE)
                         upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
 
                         button_positions[stat_name] = (upgrade_button_rect, upgrade_button_text, upgrade_button_text_rect)
-                        
-                        pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
+
+                        #pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
+                        tr_rect = pygame.Surface((upgrade_button_rect.width, upgrade_button_rect.height), pygame.SRCALPHA)
+                        tr_rect.fill((42, 101, 161, 127))
+                        shop_screen.blit(tr_rect, (upgrade_button_rect.x, upgrade_button_rect.y))
                         shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
 
                         upgrade_button_rects.append((upgrade_button_rect, stat_name, progression))
+                    else:
+                        if stat_name in button_positions:
+                            upgrade_button_rect, _, _ = button_positions[stat_name]
+                            shop_screen.blit(objs['bg_shop']['sf'], upgrade_button_rect, area=upgrade_button_rect)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -438,16 +452,18 @@ class Screen:
                             next_stat = self.get_next_value(current_stat, progression)
                             if next_stat is not None:
                                 STATS[stat_name] = next_stat
-                                text = font_s.render(f"{stat_name}: {STATS[stat_name]}", True, BLACK)
+                                text = font_s.render(f"{stat_name}: {STATS[stat_name]}", True, WHITE)
+                    if reset_button_rect.collidepoint(event.pos):
+                        STATS["BULLET DAMAGE"] = 1
+                        STATS["BULLET FREQUENCY"] = 10
+                        STATS['BULLET SPEED'] = 7
+                        STATS["TURRET LEVEL"] = 1
+                        STATS["BEAM WIDTH"] = 15
+                        STATS["LIGHTHOUSE HP"] = 2
 
-                                if STATS[stat_name] == max(progression):
-                                    pygame.draw.rect(shop_screen, objs['bg_shop']['sf'].get_at((upgrade_button_rect.x, upgrade_button_rect.y)), upgrade_button_rect)
-                                else:
-                                    upgrade_button_rect, upgrade_button_text, upgrade_button_text_rect = button_positions[stat_name]
-                                    pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
-                                    shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
-                            save_stats(STATS)
+                        save_stats(STATS)
 
+            
             screen.blit(shop_screen, (0, 0))
             pygame.display.flip()
 
@@ -537,6 +553,8 @@ class Boss:
                         if collision_lt and self.tentacles[t_n]['hp'] > 0:
                             circles.remove(circle)
                             self.tentacles[t_n]['hp'] -= STATS['BULLET DAMAGE']
+                            if self.tentacles[t_n]['hp'] < 0:
+                                self.tentacles[t_n]['hp'] = 0
                     if self.tentacles[t_n]['hp'] > 0:
                         if t_n < 3:
                             if self.tentacles[t_n]['sprite']['rect'].x != 0:
@@ -558,6 +576,7 @@ class Boss:
                     if self.tentacles[t_n]['sprite']['sf'].get_alpha() > 0:
                         screen.blit(self.tentacles[t_n]['sprite']['sf'], self.tentacles[t_n]['sprite']['rect'])
             elif stage == 2:
+                self.t_hp = 2
                 if not self.stage2:
                     for t_n in range(len(self.tentacles)):
                         if self.tentacles[t_n]['hp'] <= 2:
@@ -592,6 +611,8 @@ class Boss:
                         if collision_lt and self.tentacles[self.curr_t_n]['hp'] > 0:
                             circles.remove(circle)
                             self.tentacles[self.curr_t_n]['hp'] -= STATS['BULLET DAMAGE']
+                            if self.tentacles[t_n]['hp'] < 0:
+                                self.tentacles[t_n]['hp'] = 0
                             self.tentacles[self.curr_t_n]['sprite']['sf'].set_alpha(self.tentacles[self.curr_t_n]['sprite']['sf'].get_alpha() - int(255 / (self.t_hp / STATS['BULLET DAMAGE'])))
                             if self.curr_t_n < 3: # left tentacles are knokbacked to the left, reversed for the right ones
                                 self.tentacles[self.curr_t_n]['sprite']['rect'].x -= STATS['BULLET KNOCKBACK']
@@ -630,7 +651,7 @@ class Boss:
                     if objs['fin']['sf'].get_alpha() == 0:
                         if self.end_time == None:
                             self.end_time = pygame.time.get_ticks()
-                        if pygame.time.get_ticks() - self.end_time > 5000:
+                        if pygame.time.get_ticks() - self.end_time > 3000:
                             self.started = False
             if self.show_hb:
                 self.healthbar(self.t_hp)
@@ -977,28 +998,29 @@ def game(level, points):
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
         if (len(squares)==0 and points != 0 and len(fading_squares) == 0): 
-            if (level==1 and boss_preview != False):
-                boss_preview = True
-                if max_alpha == 0:    
-                    if start_time == 0:
-                        start_time = pygame.time.get_ticks() 
-                    elif pygame.time.get_ticks() - start_time > 2000:
-                        scr_alpha = max(scr_alpha - 3, 0)
-                        objs['preview']['sf'].set_alpha(scr_alpha)
-                        if scr_alpha == 0:
-                            boss_preview = False
-                            objs['bg_isl']['sf'].set_alpha(255)
-                            max_alpha = 80
-                            min_alpha = 20
-                            max_odd = 100
-            elif not boss_killed:
-                Screen.debug_info(boss.tentacles, stage)
-                boss.bossfight(stage, moved_x, circles, level, points)
-                moved_x = True
-                if stage != 3 and sum(t['hp'] for t in boss.tentacles) == 0 and sum(t['sprite']['sf'].get_alpha() for t in boss.tentacles) == 0:
-                    stage += 1
-                elif stage == 3 and sum(t['hp'] for t in boss.tentacles) == 0 and boss.started == False:
-                    boss_killed = True
+            if level == 9 and not boss_killed:
+                if boss_preview != False:
+                    boss_preview = True
+                    if max_alpha == 0:    
+                        if start_time == 0:
+                            start_time = pygame.time.get_ticks() 
+                        elif pygame.time.get_ticks() - start_time > 2000:
+                            scr_alpha = max(scr_alpha - 3, 0)
+                            objs['preview']['sf'].set_alpha(scr_alpha)
+                            if scr_alpha == 0:
+                                boss_preview = False
+                                objs['bg_isl']['sf'].set_alpha(255)
+                                max_alpha = 80
+                                min_alpha = 20
+                                max_odd = 100
+                elif not boss_killed:
+                    Screen.debug_info(boss.tentacles, stage)
+                    boss.bossfight(stage, moved_x, circles, level, points)
+                    moved_x = True
+                    if stage != 3 and sum(t['hp'] for t in boss.tentacles) == 0 and sum(t['sprite']['sf'].get_alpha() for t in boss.tentacles) == 0:
+                        stage += 1
+                    elif stage == 3 and sum(t['hp'] for t in boss.tentacles) == 0 and boss.started == False:
+                        boss_killed = True
             else:
                 Screen().endscreen("LEVEL COMPLETED", level, points)
                 save_stats(STATS)

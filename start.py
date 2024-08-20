@@ -7,12 +7,14 @@ from consts import *
 pygame.init()
 pygame.font.init()
 
-font_xs = pygame.font.Font('graphics/font/super_mario.ttf', 30)
-font_s = pygame.font.Font('graphics/font/super_mario.ttf', 40)
-font_m = pygame.font.Font('graphics/font/super_mario.ttf', 50)
-font_l = pygame.font.Font('graphics/font/super_mario.ttf', 60)
-font_xl = pygame.font.Font('graphics/font/super_mario.ttf', 80)
-font_for_the_biggest_nigga = pygame.font.Font('graphics/font/super_mario.ttf', 100)
+sm_font_path = 'graphics/font/super_mario.ttf'
+sm_outlines_font_path = 'graphics/font/sm_outlines.ttf'
+font_xs = pygame.font.Font(sm_font_path, 30)
+font_s = pygame.font.Font(sm_font_path, 40)
+font_m = pygame.font.Font(sm_font_path, 50)
+font_l = pygame.font.Font(sm_outlines_font_path, 60)
+font_xl = pygame.font.Font(sm_outlines_font_path, 80)
+font_for_the_biggest_nigga = pygame.font.Font(sm_outlines_font_path, 100)
 
 info = pygame.display.Info()
 unscaled_scr_width = info.current_w
