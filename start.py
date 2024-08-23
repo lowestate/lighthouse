@@ -112,7 +112,24 @@ def load_stats(filename='stats.json'):
         with open(filename, 'r') as f:
             stats = json.load(f)
     except FileNotFoundError:
-        stats = {'total_sqs_killed': 0}
+        stats = {
+                    "total_sqs_killed": 0,
+                    "coins": 0,
+                    "BULLET DAMAGE": 1,
+                    "_progression_bullet_damage": "1, 2, 4, 7, 10",
+                    "BULLET KNOCKBACK": 50,
+                    "_progression_bullet_knockback": "50, 70, 100",
+                    "BULLET FREQUENCY": 10,
+                    "_progression_bullet_frequency": "10, 45, 70, 90, 100",
+                    "BULLET SPEED": 7,
+                    "_progression_bullet_speed": "7, 9, 12, 14, 17",
+                    "TURRET LEVEL": 1,
+                    "_progression_turret_level": "1, 2, 3, 4, 5",
+                    "BEAM WIDTH": 15,
+                    "_progression_beam_width": "15, 18, 22, 25, 28",
+                    "LIGHTHOUSE HP": 2,
+                    "_progression_lighthouse_hp": "2, 3, 4, 5, 6"
+                }
     return stats
 
 def save_stats(stats, filename='stats.json'):

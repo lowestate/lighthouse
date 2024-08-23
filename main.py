@@ -147,21 +147,37 @@ class Circle:
 
 
 class Screen:
-    def render_info(self, points, level, remaining_enemies):
+    def render_info(self, points, level, remaining_enemies, coins):
 
         text_to_blit = { # [value, offset]
-            'SCORE: ': [points, 425],
-            'LEVEL: ': [level, 125], 
-            'ENEMIES REMAIN: ':  [remaining_enemies, -290]
+            'SCORE': [points, 425],
+            'LEVEL': [level, 125], 
+            'ENEMIES REMAIN':  [remaining_enemies, -290],
+            'COINS': [coins, -850],
         }
         
-        for key in text_to_blit: 
-            points_text = font_s.render(f"{key}{text_to_blit[key][0]}", True, (255, 255, 255))
-            text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 40))
-            transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
-            transparent_rect.fill((0, 0, 0, 0))
-            screen.blit(transparent_rect, text_rect.topleft)
-            screen.blit(points_text, text_rect.topleft)
+        for key in text_to_blit:
+            if key == 'COINS':
+                coins_text = font_s.render(f"{text_to_blit[key][0]}", True, (255, 255, 255))
+                coins_rect = coins_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 40))
+                screen.blit(coins_text, coins_rect.topleft)
+
+                circle_center = (coins_rect.right + 25, coins_rect.centery)
+                circle_radius = coins_rect.height // 2
+                circle_surface = pygame.Surface((circle_radius * 2, circle_radius * 2), pygame.SRCALPHA)
+                pygame.draw.circle(circle_surface, YELLOW, (circle_radius, circle_radius), circle_radius)
+                screen.blit(circle_surface, (circle_center[0] - circle_radius + 3, circle_center[1] - circle_radius - 5))
+
+                c_text = font_xs.render("C", True, (0, 0, 0))
+                c_rect = c_text.get_rect(center=(coins_rect.right + 25, coins_rect.centery - 3))
+                screen.blit(c_text, c_rect.topleft)
+            else:
+                points_text = font_s.render(f"{key}:  {text_to_blit[key][0]}", True, (255, 255, 255))
+                text_rect = points_text.get_rect(center=(screen_width // 2 - text_to_blit[key][1], 40))
+                transparent_rect = pygame.Surface((text_rect.width, text_rect.height), pygame.SRCALPHA)
+                transparent_rect.fill((0, 0, 0, 0))
+                screen.blit(transparent_rect, text_rect.topleft)
+                screen.blit(points_text, text_rect.topleft)
 
     def endscreen(self, result, curr_level, score):
         victory_screen = pygame.Surface((screen_width, screen_height))
@@ -347,7 +363,6 @@ class Screen:
     def shop(self):
         shop_screen = pygame.Surface((screen_width, screen_height), pygame.SRCALPHA)
         
-        
         stats_to_display = [
             ("BULLET DAMAGE", "_progression_bullet_damage"),
             ("BULLET FREQUENCY", "_progression_bullet_frequency"),
@@ -369,18 +384,35 @@ class Screen:
         
         shop_text = font_xl.render(f"SHOP", True, WHITE)
         shop_rect = shop_text.get_rect(center=(screen_width // 2, 90))
-        
-
-        reset_button_rect = pygame.Rect(1650, 50, 270, 100)
+    
+        reset_button_rect = pygame.Rect(1450, 80, 270, 100)
         reset_button_text = font_s.render("reset", True, WHITE)
-        
-
+        coins_color_transition = None
         while True:
             upgrade_button_rects = []  
             shop_screen.blit(objs['bg_shop']['sf'], objs['bg_shop']['rect'])
             shop_screen.blit(shop_text, shop_rect)
             shop_screen.blit(objs['shop_return']['sf'], objs['shop_return']['rect'])
             shop_screen.blit(reset_button_text, reset_button_rect)
+
+            coins_color = (255, 255, 255)
+            if coins_color_transition:
+                coins_color = coins_color_transition.update_color()
+
+            coins_text = font_m.render(f"{STATS['coins']}", True, coins_color)
+            coins_rect = coins_text.get_rect(center=(screen_width // 2 + 800, 100))
+            shop_screen.blit(coins_text, coins_rect.topleft)
+
+            circle_center = (coins_rect.right + 30, coins_rect.centery)
+            circle_radius = coins_rect.height // 2
+            circle_surface = pygame.Surface((circle_radius * 2, circle_radius * 2), pygame.SRCALPHA)
+            pygame.draw.circle(circle_surface, (230, 188, 76), (circle_radius, circle_radius), circle_radius)
+            shop_screen.blit(circle_surface, (circle_center[0] - circle_radius + 3, circle_center[1] - circle_radius - 5))
+
+            c_text = font_s.render("C", True, (0, 0, 0))
+            c_rect = c_text.get_rect(center=(coins_rect.right + 31, coins_rect.centery - 1))
+            shop_screen.blit(c_text, c_rect.topleft)
+
             for i, (stat_name, prog_name) in enumerate(stats_to_display):
                 col = i % 2
                 row = i // 2
@@ -392,7 +424,6 @@ class Screen:
 
                 text = font_m.render(f"{stat_name}: {current_stat}", True, WHITE)
                 text_rect = text.get_rect(topleft=(stat_x, stat_y))
-                #pygame.draw.rect(shop_screen, (64, 64, 64), (text_rect.x - 20, text_rect.y - 30, 680, 100))
                 transparent_rect = pygame.Surface((680, 100), pygame.SRCALPHA)
                 transparent_rect.fill((42, 101, 161, 127))
                 shop_screen.blit(transparent_rect, (text_rect.x - 20, text_rect.y - 30))
@@ -403,7 +434,7 @@ class Screen:
                     
                     cell_x_start = stat_x + progress_x_offset
                     cell_y = text_rect.bottom + 40
-                   
+                    
                     cell_color = WHITE if STATS[stat_name] != max(progression) else YELLOW
 
                     for j, value in enumerate(progression):
@@ -422,18 +453,30 @@ class Screen:
 
                     if STATS[stat_name] != max(progression):
                         upgrade_button_rect = pygame.Rect(cell_x_start + (len(progression) * (cell_size + cell_margin)) + upgrade_x_offset, cell_y, 270, 100)
-                        upgrade_button_text = font_s.render("UPGRADE", True, WHITE)
-                        upgrade_button_text_rect = upgrade_button_text.get_rect(center=upgrade_button_rect.center)
+                        upgrade_button_text = font_m.render("UP", True, YELLOW)
+                        upgrade_button_text_rect = upgrade_button_text.get_rect(topleft=(upgrade_button_rect.x + 35 , upgrade_button_rect.centery - 20))
 
                         button_positions[stat_name] = (upgrade_button_rect, upgrade_button_text, upgrade_button_text_rect)
-
-                        #pygame.draw.rect(shop_screen, WHITE, upgrade_button_rect)
                         tr_rect = pygame.Surface((upgrade_button_rect.width, upgrade_button_rect.height), pygame.SRCALPHA)
                         tr_rect.fill((42, 101, 161, 127))
                         shop_screen.blit(tr_rect, (upgrade_button_rect.x, upgrade_button_rect.y))
                         shop_screen.blit(upgrade_button_text, upgrade_button_text_rect)
 
-                        upgrade_button_rects.append((upgrade_button_rect, stat_name, progression))
+                        next_stat = self.get_next_value(current_stat, progression)
+                        next_index = progression.index(next_stat)
+                        upgrade_cost = int(5 * (next_index ** 2) + 10)
+                        
+                        cost_text = font_s.render(f"{upgrade_cost}", True, WHITE)
+                        cost_text_rect = cost_text.get_rect(topleft=(upgrade_button_rect.x + 135 , upgrade_button_rect.centery - 15))
+                        shop_screen.blit(cost_text, cost_text_rect)
+
+                        circle_c = (cost_text_rect.right + 30, cost_text_rect.centery)
+                        circle_r = cost_text_rect.height // 2.5
+                        circle_sf = pygame.Surface((circle_r * 2, circle_r * 2), pygame.SRCALPHA)
+                        pygame.draw.circle(circle_sf, (230, 188, 76), (circle_r, circle_r), circle_r)
+                        shop_screen.blit(circle_sf, (circle_c[0] - circle_r + 3, circle_c[1] - circle_r - 5))
+
+                        upgrade_button_rects.append((upgrade_button_rect, stat_name, progression, upgrade_cost))
                     else:
                         if stat_name in button_positions:
                             upgrade_button_rect, _, _ = button_positions[stat_name]
@@ -443,16 +486,22 @@ class Screen:
                 if event.type == pygame.QUIT:
                     sys.exit()
                 elif (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE) or event.type == pygame.MOUSEBUTTONDOWN and objs['shop_return']['rect'].collidepoint(event.pos):
-                        self.startscreen()
-                        return
+                    self.startscreen()
+                    return
                 elif event.type == pygame.MOUSEBUTTONDOWN:
-                    for upgrade_button_rect, stat_name, progression in upgrade_button_rects:
+                    for upgrade_button_rect, stat_name, progression, upgrade_cost in upgrade_button_rects:
                         if upgrade_button_rect.collidepoint(event.pos):
                             current_stat = STATS[stat_name]
                             next_stat = self.get_next_value(current_stat, progression)
                             if next_stat is not None:
-                                STATS[stat_name] = next_stat
-                                text = font_s.render(f"{stat_name}: {STATS[stat_name]}", True, WHITE)
+                                next_index = progression.index(next_stat)
+                                if STATS['coins'] >= upgrade_cost:
+                                    STATS['coins'] -= upgrade_cost
+                                    STATS[stat_name] = next_stat
+                                    text = font_s.render(f"{stat_name}: {STATS[stat_name]}", True, WHITE)
+                                else:
+                                    # Подсвечиваем количество монет красным цветом
+                                    coins_color_transition = ColorTransition((255, 0, 0), (255, 255, 255), duration=30)
                     if reset_button_rect.collidepoint(event.pos):
                         STATS["BULLET DAMAGE"] = 1
                         STATS["BULLET FREQUENCY"] = 10
@@ -460,12 +509,13 @@ class Screen:
                         STATS["TURRET LEVEL"] = 1
                         STATS["BEAM WIDTH"] = 15
                         STATS["LIGHTHOUSE HP"] = 2
+                        STATS["coins"] = 9999
 
-                        save_stats(STATS)
+            save_stats(STATS)
 
-            
             screen.blit(shop_screen, (0, 0))
             pygame.display.flip()
+
 
     def get_next_value(self, current_value, progression):
         for value in progression:
@@ -473,6 +523,22 @@ class Screen:
                 return value
         return None
 
+
+class ColorTransition:
+    def __init__(self, start_color, end_color, duration=30):
+        self.start_color = pygame.Color(*start_color)
+        self.end_color = pygame.Color(*end_color)
+        self.duration = duration
+        self.current_frame = 0
+
+    def update_color(self):
+        t = self.current_frame / self.duration
+        self.current_frame = min(self.current_frame + 1, self.duration)
+        return self.start_color.lerp(self.end_color, t)
+
+    def reset(self):
+        self.current_frame = 0
+    
 
 class Raindrop:
     def __init__(self):
@@ -787,6 +853,7 @@ def check_collision(circles, squares, fading_squares, stats):
             square_x, square_y = square.square['position']
             if (square_x <= circle_x <= square_x + 40) and (square_y <= circle_y <= square_y + 40):     
                 stats['total_sqs_killed'] += 1
+                stats['coins'] += 1
                 save_stats(stats)
                 square.trigger_death_anim(pygame.time.get_ticks())
                 fading_squares.append(square)
@@ -993,7 +1060,7 @@ def game(level, points):
         raindrops = [drop for drop in raindrops if drop.update()]
         [drop.draw(screen) for drop in raindrops]          
     
-        Screen().render_info(points, level, len(squares))
+        Screen().render_info(points, level, len(squares), STATS['coins'])
         lh_healthbar(lh_hp)
 
         # проверка len(f_s) нужна для того, чтобы экран победы запускался после последней анимации смерти врага, а не сразу же при его убийстве
