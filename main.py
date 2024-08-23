@@ -109,27 +109,51 @@ class Square:
 
 
 class Circle:
-    def __init__(self) -> None:
+    def __init__(self, x, y, dx, dy):
+        self.circle = (x, y, dx, dy)
+
+    @staticmethod
+    def from_center_to_mouse(screen_width, screen_height, bullet_speed, offset_angle=0):
         mouse_x, mouse_y = pygame.mouse.get_pos()
-        dx = mouse_x - (screen_width // 2)
-        dy = mouse_y - (screen_height // 2)
-            
+        center_x = screen_width // 2
+        center_y = screen_height // 2
+
+        dx = mouse_x - center_x
+        dy = mouse_y - center_y
+
         length = math.sqrt(dx ** 2 + dy ** 2)
-        if length > 0:
+        if length != 0:
             dx /= length
             dy /= length
-                
-        circle_x = screen_width // 2
-        circle_y = screen_height // 2
 
-        self.circle = (circle_x, circle_y, dx * STATS['BULLET SPEED'], dy * STATS['BULLET SPEED'])
-        self.mouse_x = mouse_x
-        self.mouse_y = mouse_y
+        # Применяем смещение угла, если оно есть
+        if offset_angle != 0:
+            angle = math.atan2(dy, dx)
+            angle += math.radians(offset_angle)
+            dx = math.cos(angle)
+            dy = math.sin(angle)
+
+        return Circle(center_x, center_y, dx * bullet_speed, dy * bullet_speed)
+
+    @staticmethod
+    def offset_circle(circle, offset_distance):
+        circle_x, circle_y, dx, dy = circle.circle
+        # Перпендикулярный вектор для смещения
+        perp_dx = -dy
+        perp_dy = dx
+        
+        # Нормализуем перпендикулярный вектор и умножаем на расстояние смещения
+        length = math.sqrt(perp_dx ** 2 + perp_dy ** 2)
+        if length > 0:
+            perp_dx = (perp_dx / length) * offset_distance
+            perp_dy = (perp_dy / length) * offset_distance
+        
+        # Создаем новый круг, смещенный на определенное расстояние
+        return Circle(circle_x + perp_dx, circle_y + perp_dy, dx, dy)
 
     def draw_circles(self, circles):
         new_circles = []
         for circle in circles:
-
             circle_x, circle_y, dx, dy = circle
 
             circle_x += dx
@@ -516,7 +540,6 @@ class Screen:
             screen.blit(shop_screen, (0, 0))
             pygame.display.flip()
 
-
     def get_next_value(self, current_value, progression):
         for value in progression:
             if value > current_value:
@@ -890,6 +913,8 @@ def game(level, points):
     circles = []
     last_circle_spawn_time = 0
     spawn_delay = 1200 - STATS['BULLET FREQUENCY'] * 10
+    circle_drawer = Circle(0, 0, 0, 0)
+    offsets = [20, -20]
 
     squares = []
     oth_sqs_coords = []
@@ -933,9 +958,37 @@ def game(level, points):
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 if current_time - last_circle_spawn_time >= spawn_delay:
-                    new_c = Circle()
-                    circles.append(new_c.circle)
-                    last_circle_spawn_time = current_time
+                    new_circles = []
+                    main_circle = Circle.from_center_to_mouse(screen_width, screen_height, STATS['BULLET SPEED'])
+
+                    if STATS['TURRET LEVEL'] == 1:
+                        # один круг по центру
+                        new_circles.append(main_circle)
+
+                    if STATS['TURRET LEVEL'] == 2:
+                        # два круга со смещением 10 пикс
+                        [new_circles.append(Circle.offset_circle(main_circle, o)) for o in offsets]
+
+                    if STATS['TURRET LEVEL'] == 3:
+                        # круг по центру + два круга под углом 5 град
+                        degrees = [0, 5, -5]
+                        [new_circles.append(Circle.from_center_to_mouse(screen_width, screen_height, STATS['BULLET SPEED'], d)) for d in degrees]
+                    
+                    if STATS['TURRET LEVEL'] == 4:
+                        # два круга со смещением + 2 круга под углом
+                        degrees = [5, -5]
+                        [new_circles.append(Circle.offset_circle(main_circle, o)) for o in offsets]
+                        [new_circles.append(Circle.from_center_to_mouse(screen_width, screen_height, STATS['BULLET SPEED'], d)) for d in degrees]
+
+                    if STATS['TURRET LEVEL'] == 5:
+                        # круг по центру + два круга 5 град + 2 круга 10 град
+                        degrees = [0, 5, -5, 10, -10]
+                        [new_circles.append(Circle.from_center_to_mouse(screen_width, screen_height, STATS['BULLET SPEED'], d)) for d in degrees]
+
+                    for c in new_circles:
+                        circles.append(c.circle)
+
+                    last_circle_spawn_time = pygame.time.get_ticks()
             elif event.type == SPAWN_ENEMY_EVENT and enemies_spawned < n_enemies - 1:
                 squares.append(Square(speed, oth_sqs_coords))
                 oth_sqs_coords.append(squares[len(squares) - 1].square['position'])
@@ -944,7 +997,6 @@ def game(level, points):
                 boss.started = True
                 boss.show_hb = False
                 objs['fin']['sf'].set_alpha(255)
-
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
         dx = mouse_x - (screen_width // 2)
@@ -1043,7 +1095,7 @@ def game(level, points):
         if len(squares) < n_sq:
             points+=1
 
-        circles = Circle().draw_circles(circles)
+        circles = circle_drawer.draw_circles(circles)
 
         if boss_preview and objs['bg_isl']['sf'].get_alpha() > 0:
             objs['bg_isl']['sf'].set_alpha(objs['bg_isl']['sf'].get_alpha() - 1.5)        
@@ -1091,7 +1143,6 @@ def game(level, points):
             else:
                 Screen().endscreen("LEVEL COMPLETED", level, points)
                 save_stats(STATS)
-        
         pygame.display.flip()
         clock.tick(60)
 
